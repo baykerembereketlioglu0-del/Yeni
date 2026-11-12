@@ -35,6 +35,7 @@ for i, (a, b, v) in enumerate(PARCALAR):
     etiket.append(f"[p{i}]")
 filtre.append("".join(etiket) + f"amix=inputs={len(etiket)}:normalize=0,apad,atrim=0:{SURE}[s]")
 subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(KAYNAK), "-filter_complex", ";".join(filtre), "-map", "[s]", "-ac", "2", "-ar", "48000", str(HEDEF)], check=True)
-json.dump({"anlatim": str(HEDEF.relative_to(K.parent.parent)), "efektSes": 0.45, "altyazi": ALTYAZI},
+json.dump({"anlatim": str(HEDEF.relative_to(K.parent.parent)), "efektSes": 0.45, "altyazi": ALTYAZI,
+           "muzik": "shorts/01-issiz-ada/muzik/Life_of_Riley.mp3", "muzikLufs": -25, "muzikBaslangic": 2.0, "muzikOfset": 0},
           open(K / "kayit_ayar.json", "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 print("hazır:", HEDEF)
