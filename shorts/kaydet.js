@@ -2,7 +2,8 @@
 // Web Audio motorundan OfflineAudioContext ile üretilir.
 //   node shorts/kaydet.js <html> <cikti.mp4> [fps=60] [kayit_ayar.json]
 // kayit_ayar.json (hepsi isteğe bağlı): eslesme + toplam (animasyonu seslendirmeye göre esnetir),
-// altyazi (yeni altyazılar), anlatim (seslendirme dosyası), muzik + muzikLufs (fon müziği, döngülü).
+// altyazi (yeni altyazılar), anlatim (seslendirme dosyası), efektSes (efekt seviyesi, varsayılan 0.6),
+// muzik + muzikLufs (fon müziği, döngülü).
 const { chromium } = require("playwright");
 const { spawn } = require("child_process");
 const fs = require("fs");
@@ -20,7 +21,7 @@ function ara(x, n) { for (let i = 0; i < n.length - 1; i++) { const [a0, b0] = n
   const videoAnim = ayar && ayar.eslesme ? ayar.eslesme.map(([an, v]) => [v, an]) : null;
   const wav = cikti.replace(/\.mp4$/, ".efekt.wav");
   fs.writeFileSync(wav, Buffer.from(await sayfa.evaluate((a) => a && a.eslesme ? window.sesWav(a.eslesme, a.toplam) : window.sesWav(), ayar), "base64"));
-  const girdi = ["-i", wav], parca = ["[1:a]volume=0.6[e]"], etiket = ["[e]"];
+  const girdi = ["-i", wav], parca = [`[1:a]volume=${(ayar && ayar.efektSes) || 0.6}[e]`], etiket = ["[e]"];
   if (ayar && ayar.anlatim) { girdi.push("-i", path.resolve(ayar.anlatim)); const n = girdi.length / 2; parca.push(`[${n}:a]volume=1.0[n]`); etiket.push("[n]"); }
   if (ayar && ayar.muzik) { girdi.push("-stream_loop", "-1", "-i", path.resolve(ayar.muzik)); const n = (girdi.length - 2) / 2;
     parca.push(`[${n}:a]atrim=0:${sure},loudnorm=I=${ayar.muzikLufs || -24}:TP=-3,afade=t=in:d=0.4,afade=t=out:st=${(sure - 1.2).toFixed(2)}:d=1.2[m]`); etiket.push("[m]"); }
