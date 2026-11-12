@@ -56,10 +56,11 @@ function arkaPlan(w, h, cx, cy) {
 // ------------------------------------------------ LOGO
 function logoCiz() {
   g = document.getElementById("logo").getContext("2d");
-  arkaPlan(1024, 1024, 512, 560);
-  g.drawImage(RESIM.bust, 0, 0, 1024, 1024);
-  senEtiketi(512, 150, 1.05);
-  soruIsareti(800, 330, .62, .25);
+  arkaPlan(1024, 1024, 512, 380);
+  const isik = g.createRadialGradient(512, 360, 40, 512, 360, 520); isik.addColorStop(0, "rgba(255,210,63,.28)"); isik.addColorStop(1, "rgba(255,210,63,0)");
+  g.fillStyle = isik; g.fillRect(0, 0, 1024, 1024);
+  g.drawImage(RESIM.kafa, 0, 0, 1024, 1024);
+  senEtiketi(512, 320, 2.25);
 }
 
 // ------------------------------------------------ ÇİZİM SİMGELERİ (banner deseni)
@@ -74,26 +75,17 @@ function simge(tur, x, y, s, aci, renk) {
   if (tur === 5) { for (let i = 0; i < 10; i++) { const a = i * Math.PI / 5, r = i % 2 ? 22 : 50; i ? g.lineTo(Math.cos(a) * r, Math.sin(a) * r) : g.moveTo(r, 0); } g.closePath(); }
   g.stroke(); g.restore();
 }
-function balonMini(i, x, y, r, numara) {
-  g.save(); g.shadowColor = P.secenek[i]; g.shadowBlur = 50; daire(x, y, r, "#fff", P.secenek[i], 18); g.restore(); daire(x, y, r, null, INK, 8);
-  simge(i, x, y + (i === 0 ? -10 : 0), r / 95, i === 2 ? 0 : -.15, P.secenek[i]);
-  daire(x - r * .72, y - r * .72, r * .3, P.secenek[i], INK, 8); yazi(String(numara), x - r * .72, y - r * .72 + 3, { boyut: r * .38, klw: 9, golge: false });
-}
-
 // ------------------------------------------------ BANNER  (güvenli alan: 1546 x 423, ortada)
 function bannerCiz() {
   g = document.getElementById("banner").getContext("2d");
   const W = 2560, H = 1440;
   arkaPlan(W, H, 1280, 720);
-  for (let i = 0; i < 70; i++) { const x = rnd(i, 1) * W, y = rnd(i, 2) * H; if (x > 470 && x < 2090 && y > 470 && y < 970) continue; simge(i % 6, x, y, .6 + rnd(i, 3) * .5, rnd(i, 4) * 6, "rgba(255,255,255,.08)"); }
-  // güvenli alanın dışı (masaüstü/TV): seçenek balonları
-  balonMini(0, 250, 470, 120, 1); balonMini(1, 330, 990, 105, 2); balonMini(2, 2300, 460, 115, 3); balonMini(3, 2230, 990, 110, 4);
+  for (let i = 0; i < 70; i++) { const x = rnd(i, 1) * W, y = rnd(i, 2) * H; if (x > 470 && x < 2090 && y > 470 && y < 970) continue; simge(4 + (i % 2), x, y, .7 + rnd(i, 3) * .6, rnd(i, 4) * 1.2 - .6, "rgba(255,255,255,.08)"); }
   // logo rozeti
   const lx = 760, ly = 720, lr = 205;
   g.save(); g.shadowColor = "rgba(0,0,0,.5)"; g.shadowBlur = 50; daire(lx, ly, lr, P.lacivert, P.sari, 16); g.restore();
-  g.save(); g.beginPath(); g.arc(lx, ly, lr - 8, 0, Math.PI * 2); g.clip(); g.drawImage(RESIM.bust, lx - lr - 10, ly - lr + 10, (lr + 10) * 2, (lr + 10) * 2); g.restore();
+  g.save(); g.beginPath(); g.arc(lx, ly, lr - 8, 0, Math.PI * 2); g.clip(); g.drawImage(document.getElementById("logo"), lx - lr, ly - lr, lr * 2, lr * 2); g.restore();
   daire(lx, ly, lr, null, P.sari, 16); daire(lx, ly, lr + 8, null, INK, 6);
-  soruIsareti(lx + 160, ly - 160, .45, .25);
   // yazılar: [SEN] OLSAN  ...hangisini seçerdin?
   const x0 = 1020, ty = 615, sagSinir = 2030;   // güvenli alan: x 507-2053, y 508-931
   let fb = 190; g.font = `700 ${fb}px ${FONT}`;
@@ -109,5 +101,5 @@ function bannerCiz() {
   yazi(metin, x0 + 45, 792, { boyut: 70, renk: INK, kontur: null, golge: false, hiza: "left", agirlik: 600 });
   yazi("Cevabı bilimde.", x0 + 40, 902, { boyut: 44, renk: P.sari, klw: 10, hiza: "left" });
 }
-window.ciz = async (bust) => { await Promise.all([600, 700].map(w => document.fonts.load(`${w} 60px ${FONT}`))); await resimYukle("bust", bust); logoCiz(); bannerCiz(); return true; };
+window.ciz = async (bust) => { await Promise.all([600, 700].map(w => document.fonts.load(`${w} 60px ${FONT}`))); await resimYukle("kafa", bust); logoCiz(); bannerCiz(); return true; };
 </script></body></html>
