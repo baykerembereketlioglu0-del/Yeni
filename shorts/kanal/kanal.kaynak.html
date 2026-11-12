@@ -52,40 +52,28 @@ function arkaPlan(w, h, cx, cy) {
 }
 
 // ------------------------------------------------ LOGO
-function kaptanSapkasi(x, y, r, aci) { // r = kafa yarıçapı; (x,y) = kafa merkezi
-  g.save(); g.translate(x, y); g.rotate(aci); g.scale(r / 100, r / 100);
-  // tepe
-  sekil(() => { g.moveTo(-104, -78); g.bezierCurveTo(-140, -150, -60, -178, 10, -176); g.bezierCurveTo(90, -176, 150, -150, 112, -78); g.closePath(); }, "#FFFFFF", INK, 7);
-  g.save(); g.beginPath(); g.moveTo(-104, -78); g.bezierCurveTo(-140, -150, -60, -178, 10, -176); g.bezierCurveTo(90, -176, 150, -150, 112, -78); g.closePath(); g.clip();
-  g.fillStyle = "rgba(43,58,103,.12)"; g.fillRect(30, -190, 120, 120); g.restore();
-  // lacivert bant
-  sekil(() => { g.roundRect(-100, -96, 208, 34, 10); }, "#2B3A67", INK, 7);
-  // siper
-  sekil(() => { g.moveTo(-86, -64); g.quadraticCurveTo(4, -40, 96, -64); g.quadraticCurveTo(70, -34, 4, -32); g.quadraticCurveTo(-60, -34, -86, -64); g.closePath(); }, "#1B1F33", INK, 6);
-  g.fillStyle = "rgba(255,255,255,.35)"; g.beginPath(); g.ellipse(-20, -52, 30, 4, 0, 0, Math.PI * 2); g.fill();
-  // altın çapa rozeti
-  daire(4, -80, 17, "#FFD23F", INK, 5);
-  g.strokeStyle = INK; g.lineWidth = 4; g.lineCap = "round"; g.beginPath(); g.moveTo(4, -90); g.lineTo(4, -70); g.moveTo(-6, -76); g.quadraticCurveTo(4, -66, 14, -76); g.moveTo(-3, -86); g.lineTo(11, -86); g.stroke();
-  g.restore();
+function balonYolu(x0, y0, w, h, r, ucX, ucY) { // yuvarlak köşeli balon + tek parça kuyruk (alt kenardan)
+  const cx = x0 + w / 2, k = 56;
+  g.moveTo(x0 + r, y0); g.lineTo(x0 + w - r, y0); g.arcTo(x0 + w, y0, x0 + w, y0 + r, r);
+  g.lineTo(x0 + w, y0 + h - r); g.arcTo(x0 + w, y0 + h, x0 + w - r, y0 + h, r);
+  g.lineTo(cx + k, y0 + h); g.quadraticCurveTo(cx + 18, y0 + h + 30, ucX, ucY); g.quadraticCurveTo(cx - 20, y0 + h + 22, cx - k, y0 + h);
+  g.lineTo(x0 + r, y0 + h); g.arcTo(x0, y0 + h, x0, y0 + h - r, r); g.lineTo(x0, y0 + r); g.arcTo(x0, y0, x0 + r, y0, r); g.closePath();
 }
 function logoCiz() {
   g = document.getElementById("logo").getContext("2d");
-  // sarı zemin + yumuşak ışınlar
-  const gr = g.createRadialGradient(512, 430, 60, 512, 512, 720); gr.addColorStop(0, "#FFE680"); gr.addColorStop(.55, "#FFD23F"); gr.addColorStop(1, "#F2A900");
-  g.fillStyle = gr; g.fillRect(0, 0, 1024, 1024);
-  g.save(); g.translate(512, 480); g.globalAlpha = .18; g.fillStyle = "#fff";
-  for (let i = 0; i < 16; i++) { g.rotate(Math.PI / 8); g.beginPath(); g.moveTo(0, 0); g.lineTo(-70, -900); g.lineTo(70, -900); g.fill(); } g.restore();
-  // alttaki dalga (deniz)
-  sekil(() => { g.moveTo(-20, 930); for (let x = -20; x <= 1044; x += 16) g.lineTo(x, 900 + Math.sin(x / 70) * 16); g.lineTo(1044, 1044); g.lineTo(-20, 1044); g.closePath(); }, "#13B3C4", INK, 10);
-  // karakter + şapka
+  arkaPlan(1024, 1024, 512, 300);
+  const isik = g.createRadialGradient(512, 280, 40, 512, 280, 560); isik.addColorStop(0, "rgba(255,210,63,.30)"); isik.addColorStop(1, "rgba(255,210,63,0)");
+  g.fillStyle = isik; g.fillRect(0, 0, 1024, 1024);
   g.drawImage(RESIM.kafa, 0, 0, 1024, 1024);
-  kaptanSapkasi(512, 545, 240, -.1);
-  // parıltılar
-  for (const [x, y, r] of [[830, 300, 34], [195, 360, 24], [860, 500, 18]]) {
-    g.save(); g.translate(x, y); g.fillStyle = "#fff"; g.strokeStyle = INK; g.lineWidth = 5; g.beginPath();
-    for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4, rr = i % 2 ? r * .3 : r; i ? g.lineTo(Math.cos(a) * rr, Math.sin(a) * rr) : g.moveTo(rr, 0); }
-    g.closePath(); g.fill(); g.stroke(); g.restore();
-  }
+  // balon
+  const [x0, y0, w, h] = [186, 112, 652, 330];
+  g.save(); g.shadowColor = "rgba(255,210,63,.6)"; g.shadowBlur = 70; sekil(() => balonYolu(x0, y0, w, h, 120, 500, 528), P.sari, INK, 18); g.restore();
+  g.save(); g.beginPath(); balonYolu(x0, y0, w, h, 120, 500, 528); g.clip();       // hafif alt gölge (hacim)
+  const ic = g.createLinearGradient(0, y0, 0, y0 + h + 90); ic.addColorStop(0, "rgba(255,255,255,.18)"); ic.addColorStop(.6, "rgba(255,255,255,0)"); ic.addColorStop(1, "rgba(196,120,0,.25)");
+  g.fillStyle = ic; g.fillRect(x0, y0, w, h + 100); g.restore();
+  sekil(() => balonYolu(x0, y0, w, h, 120, 500, 528), null, INK, 18);
+  yazi("DENİZ", 512, 214, { boyut: 150, renk: INK, kontur: null, golge: false, iz: 6 });
+  yazi("SEÇTİ", 512, 350, { boyut: 150, renk: INK, kontur: null, golge: false, iz: 6 });
 }
 
 // ------------------------------------------------ ÇİZİM SİMGELERİ (banner deseni)
