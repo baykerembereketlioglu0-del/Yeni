@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="tr"><head><meta charset="utf-8"><title>Sen Olsan – logo & banner</title>
+<html lang="tr"><head><meta charset="utf-8"><title>Ya Sonra? – logo & banner</title>
 <style>
 /*@FONT:Fredoka:fredoka:600@*/
 /*@FONT:Fredoka:fredoka:700@*/
@@ -27,17 +27,15 @@ function yazi(m, x, y, o = {}) {
 }
 function rnd(a, b = 0) { const s = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return s - Math.floor(s); }
 
-// ------------------------------------------------ SEN karakteri: videodaki çizimden (disa_aktar.js ada.html'den alır)
+// ------------------------------------------------ Karakter: videodaki çizimden (disa_aktar.js ada.html.den alır)
 const RESIM = {};
 function resimYukle(ad, url) { return new Promise(r => { const i = new Image(); i.onload = () => { RESIM[ad] = i; r(); }; i.src = url; }); }
-function senEtiketi(x, y, s) { // videodaki sarı "SEN" etiketinin büyük hali
-  g.save(); g.translate(x, y); g.scale(s, s);
-  g.save(); g.shadowColor = "rgba(255,210,63,.55)"; g.shadowBlur = 40;
-  sekil(() => { g.roundRect(-150, -70, 300, 130, 65); }, P.sari, INK, 14); g.restore();
-  sekil(() => { g.moveTo(-34, 58); g.lineTo(34, 58); g.lineTo(0, 104); g.closePath(); }, P.sari, INK, 14);
-  g.fillStyle = P.sari; g.fillRect(-30, 48, 60, 14);
-  yazi("SEN", 0, -2, { boyut: 96, renk: INK, kontur: null, golge: false });
-  g.restore();
+function konusmaBalonu(x0, y0, w, h, uc) { // sarı konuşma balonu, ucu aşağıyı gösterir
+  const yol = () => { g.roundRect(x0, y0, w, h, Math.min(140, h * .32)); };
+  g.save(); g.shadowColor = "rgba(255,210,63,.55)"; g.shadowBlur = 60; sekil(yol, P.sari, INK, 18); g.restore();
+  const cx = x0 + w / 2; sekil(() => { g.moveTo(cx - 60, y0 + h - 4); g.lineTo(cx + 60, y0 + h - 4); g.lineTo(cx, y0 + h + uc); g.closePath(); }, P.sari, INK, 18);
+  g.fillStyle = P.sari; g.fillRect(cx - 52, y0 + h - 22, 104, 24);
+  g.fillStyle = "rgba(255,255,255,.35)"; g.beginPath(); g.roundRect(x0 + 40, y0 + 26, w * .45, 22, 11); g.fill();
 }
 function soruIsareti(x, y, s, aci = .2) {
   g.save(); g.translate(x, y); g.rotate(aci); g.scale(s, s);
@@ -56,11 +54,13 @@ function arkaPlan(w, h, cx, cy) {
 // ------------------------------------------------ LOGO
 function logoCiz() {
   g = document.getElementById("logo").getContext("2d");
-  arkaPlan(1024, 1024, 512, 380);
-  const isik = g.createRadialGradient(512, 360, 40, 512, 360, 520); isik.addColorStop(0, "rgba(255,210,63,.28)"); isik.addColorStop(1, "rgba(255,210,63,0)");
+  arkaPlan(1024, 1024, 512, 330);
+  const isik = g.createRadialGradient(512, 320, 40, 512, 320, 540); isik.addColorStop(0, "rgba(255,210,63,.28)"); isik.addColorStop(1, "rgba(255,210,63,0)");
   g.fillStyle = isik; g.fillRect(0, 0, 1024, 1024);
   g.drawImage(RESIM.kafa, 0, 0, 1024, 1024);
-  senEtiketi(512, 320, 2.25);
+  konusmaBalonu(172, 118, 680, 400, 70);
+  yazi("YA", 512, 232, { boyut: 150, renk: INK, kontur: null, golge: false });
+  yazi("SONRA?", 512, 400, { boyut: 158, renk: INK, kontur: null, golge: false });
 }
 
 // ------------------------------------------------ ÇİZİM SİMGELERİ (banner deseni)
@@ -86,20 +86,20 @@ function bannerCiz() {
   g.save(); g.shadowColor = "rgba(0,0,0,.5)"; g.shadowBlur = 50; daire(lx, ly, lr, P.lacivert, P.sari, 16); g.restore();
   g.save(); g.beginPath(); g.arc(lx, ly, lr - 8, 0, Math.PI * 2); g.clip(); g.drawImage(document.getElementById("logo"), lx - lr, ly - lr, lr * 2, lr * 2); g.restore();
   daire(lx, ly, lr, null, P.sari, 16); daire(lx, ly, lr + 8, null, INK, 6);
-  // yazılar: [SEN] OLSAN  ...hangisini seçerdin?
+  // yazılar: [YA] SONRA?
   const x0 = 1020, ty = 615, sagSinir = 2030;   // güvenli alan: x 507-2053, y 508-931
   let fb = 190; g.font = `700 ${fb}px ${FONT}`;
-  const olc = (sagSinir - x0) / (g.measureText("SEN").width + 70 + 34 + g.measureText("OLSAN").width + 12); if (olc < 1) fb = Math.floor(fb * olc);
-  g.font = `700 ${fb}px ${FONT}`; const senW = g.measureText("SEN").width + 70 * fb / 190;
-  g.save(); g.shadowColor = "rgba(0,0,0,.45)"; g.shadowOffsetY = 12; g.shadowBlur = 10; sekil(() => g.roundRect(x0, ty - fb * .55, senW, fb * 1.05, fb * .525), P.sari, INK, 14); g.restore();
-  yazi("SEN", x0 + senW / 2, ty, { boyut: fb, renk: INK, kontur: null, golge: false });
-  yazi("OLSAN", x0 + senW + 34, ty, { boyut: fb, renk: "#fff", klw: 24, hiza: "left" });
-  const metin = "...hangisini seçerdin?";
+  const olc = (sagSinir - x0) / (g.measureText("YA").width + 70 + 34 + g.measureText("SONRA?").width + 12); if (olc < 1) fb = Math.floor(fb * olc);
+  g.font = `700 ${fb}px ${FONT}`; const yaW = g.measureText("YA").width + 70 * fb / 190;
+  g.save(); g.shadowColor = "rgba(0,0,0,.45)"; g.shadowOffsetY = 12; g.shadowBlur = 10; sekil(() => g.roundRect(x0, ty - fb * .55, yaW, fb * 1.05, fb * .525), P.sari, INK, 14); g.restore();
+  yazi("YA", x0 + yaW / 2, ty, { boyut: fb, renk: INK, kontur: null, golge: false });
+  yazi("SONRA?", x0 + yaW + 34, ty, { boyut: fb, renk: "#fff", klw: 24, hiza: "left" });
+  const metin = "Hangisini seçerdin?";
   g.font = `600 70px ${FONT}`; const sw = g.measureText(metin).width + 90;
   g.save(); g.shadowColor = "rgba(0,0,0,.4)"; g.shadowOffsetY = 10; g.fillStyle = "#fff"; g.beginPath(); g.roundRect(x0, 735, sw, 110, 55); g.fill(); g.restore();
   sekil(() => g.roundRect(x0, 735, sw, 110, 55), null, INK, 8);
   yazi(metin, x0 + 45, 792, { boyut: 70, renk: INK, kontur: null, golge: false, hiza: "left", agirlik: 600 });
-  yazi("Cevabı bilimde.", x0 + 40, 902, { boyut: 44, renk: P.sari, klw: 10, hiza: "left" });
+  yazi("Her seçimin bir “ama”sı var.", x0 + 40, 902, { boyut: 46, renk: P.sari, klw: 10, hiza: "left" });
 }
 window.ciz = async (bust) => { await Promise.all([600, 700].map(w => document.fonts.load(`${w} 60px ${FONT}`))); await resimYukle("kafa", bust); logoCiz(); bannerCiz(); return true; };
 </script></body></html>
