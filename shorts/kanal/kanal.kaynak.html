@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="tr"><head><meta charset="utf-8"><title>Sen Olsan – logo & banner</title>
+<style>
+/*@FONT:Fredoka:fredoka:600@*/
+/*@FONT:Fredoka:fredoka:700@*/
+body { margin: 0; background: #222; display: flex; flex-direction: column; gap: 20px; align-items: center; padding: 20px; }
+canvas { max-width: 95vw; border-radius: 8px; }
+</style></head>
+<body>
+<canvas id="logo" width="1024" height="1024"></canvas>
+<canvas id="banner" width="2560" height="1440"></canvas>
+<script>
+"use strict";
+const FONT = '"Fredoka", sans-serif', INK = "#141A33";
+const P = { lacivert: "#1B2550", gece: "#0F1430", sari: "#FFD23F", turuncu: "#F28C28", turuncuKoyu: "#C9661A", krem: "#FFF1D6", gaga: "#FFB000",
+  secenek: ["#4D96FF", "#FF7A45", "#9B5DE5", "#12B5A8"] };
+let g;
+function sekil(c, dolgu, kontur = INK, lw = 14) { g.beginPath(); c(); if (dolgu) { g.fillStyle = dolgu; g.fill(); } if (kontur && lw) { g.lineWidth = lw; g.strokeStyle = kontur; g.lineJoin = "round"; g.lineCap = "round"; g.stroke(); } }
+function daire(x, y, r, d, k = INK, lw = 14) { sekil(() => g.arc(x, y, r, 0, Math.PI * 2), d, k, lw); }
+function yazi(m, x, y, o = {}) {
+  const { boyut = 80, renk = "#fff", kontur = INK, klw = 16, hiza = "center", agirlik = 700, golge = true, iz = 0 } = o;
+  g.save(); g.font = `${agirlik} ${boyut}px ${FONT}`; g.textAlign = hiza; g.textBaseline = "middle"; g.lineJoin = "round";
+  if (iz) g.letterSpacing = iz + "px";
+  if (golge) { g.fillStyle = "rgba(0,0,0,.35)"; if (kontur) { g.lineWidth = klw; g.strokeStyle = "rgba(0,0,0,.35)"; g.strokeText(m, x, y + boyut * .08); } g.fillText(m, x, y + boyut * .08); }
+  if (kontur) { g.lineWidth = klw; g.strokeStyle = kontur; g.strokeText(m, x, y); }
+  g.fillStyle = renk; g.fillText(m, x, y); g.restore();
+}
+function rnd(a, b = 0) { const s = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return s - Math.floor(s); }
+
+// ------------------------------------------------ SEN karakteri: videodaki çizimden (disa_aktar.js ada.html'den alır)
+const RESIM = {};
+function resimYukle(ad, url) { return new Promise(r => { const i = new Image(); i.onload = () => { RESIM[ad] = i; r(); }; i.src = url; }); }
+function senEtiketi(x, y, s) { // videodaki sarı "SEN" etiketinin büyük hali
+  g.save(); g.translate(x, y); g.scale(s, s);
+  g.save(); g.shadowColor = "rgba(255,210,63,.55)"; g.shadowBlur = 40;
+  sekil(() => { g.roundRect(-150, -70, 300, 130, 65); }, P.sari, INK, 14); g.restore();
+  sekil(() => { g.moveTo(-34, 58); g.lineTo(34, 58); g.lineTo(0, 104); g.closePath(); }, P.sari, INK, 14);
+  g.fillStyle = P.sari; g.fillRect(-30, 48, 60, 14);
+  yazi("SEN", 0, -2, { boyut: 96, renk: INK, kontur: null, golge: false });
+  g.restore();
+}
+function soruIsareti(x, y, s, aci = .2) {
+  g.save(); g.translate(x, y); g.rotate(aci); g.scale(s, s);
+  g.save(); g.shadowColor = "rgba(255,210,63,.6)"; g.shadowBlur = 40; daire(0, 0, 100, P.sari, INK, 14); g.restore();
+  yazi("?", 0, 8, { boyut: 150, renk: INK, kontur: null, golge: false });
+  g.restore();
+}
+function arkaPlan(w, h, cx, cy) {
+  const gr = g.createRadialGradient(cx, cy, 0, cx, cy, Math.max(w, h) * .75); gr.addColorStop(0, "#2B3C7A"); gr.addColorStop(.6, P.lacivert); gr.addColorStop(1, P.gece);
+  g.fillStyle = gr; g.fillRect(0, 0, w, h);
+  g.save(); g.translate(cx, cy); g.globalAlpha = .07; g.fillStyle = "#fff";
+  for (let i = 0; i < 24; i++) { g.rotate(Math.PI / 12); g.beginPath(); g.moveTo(0, 0); g.lineTo(-60, -2200); g.lineTo(60, -2200); g.fill(); }
+  g.restore();
+}
+
+// ------------------------------------------------ LOGO
+function logoCiz() {
+  g = document.getElementById("logo").getContext("2d");
+  arkaPlan(1024, 1024, 512, 560);
+  g.drawImage(RESIM.bust, 0, 0, 1024, 1024);
+  senEtiketi(512, 150, 1.05);
+  soruIsareti(800, 330, .62, .25);
+}
+
+// ------------------------------------------------ ÇİZİM SİMGELERİ (banner deseni)
+function simge(tur, x, y, s, aci, renk) {
+  g.save(); g.translate(x, y); g.rotate(aci); g.scale(s, s); g.strokeStyle = renk; g.lineWidth = 10; g.lineCap = "round"; g.lineJoin = "round";
+  g.beginPath();
+  if (tur === 0) { g.ellipse(0, -20, 40, 50, 0, 0, Math.PI * 2); g.moveTo(0, 30); g.lineTo(0, 90); }                     // ayna
+  if (tur === 1) { g.roundRect(-40, -55, 80, 110, 10); g.moveTo(-40, -15); g.lineTo(40, -15); g.moveTo(-40, 20); g.lineTo(40, 20); g.moveTo(0, -55); g.lineTo(0, 55); } // çikolata
+  if (tur === 2) { g.arc(-40, 0, 30, 0, Math.PI * 2); g.moveTo(70, 0); g.arc(40, 0, 30, 0, Math.PI * 2); g.moveTo(-10, -5); g.quadraticCurveTo(0, -15, 10, -5); } // gözlük
+  if (tur === 3) { g.moveTo(-12, -70); g.lineTo(12, -70); g.lineTo(12, -50); g.quadraticCurveTo(32, -40, 32, -15); g.lineTo(32, 60); g.lineTo(-32, 60); g.lineTo(-32, -15); g.quadraticCurveTo(-32, -40, -12, -50); g.closePath(); } // şişe
+  if (tur === 4) { g.font = `700 140px ${FONT}`; g.textAlign = "center"; g.textBaseline = "middle"; g.lineWidth = 8; g.strokeText("?", 0, 0); }
+  if (tur === 5) { for (let i = 0; i < 10; i++) { const a = i * Math.PI / 5, r = i % 2 ? 22 : 50; i ? g.lineTo(Math.cos(a) * r, Math.sin(a) * r) : g.moveTo(r, 0); } g.closePath(); }
+  g.stroke(); g.restore();
+}
+function balonMini(i, x, y, r, numara) {
+  g.save(); g.shadowColor = P.secenek[i]; g.shadowBlur = 50; daire(x, y, r, "#fff", P.secenek[i], 18); g.restore(); daire(x, y, r, null, INK, 8);
+  simge(i, x, y + (i === 0 ? -10 : 0), r / 95, i === 2 ? 0 : -.15, P.secenek[i]);
+  daire(x - r * .72, y - r * .72, r * .3, P.secenek[i], INK, 8); yazi(String(numara), x - r * .72, y - r * .72 + 3, { boyut: r * .38, klw: 9, golge: false });
+}
+
+// ------------------------------------------------ BANNER  (güvenli alan: 1546 x 423, ortada)
+function bannerCiz() {
+  g = document.getElementById("banner").getContext("2d");
+  const W = 2560, H = 1440;
+  arkaPlan(W, H, 1280, 720);
+  for (let i = 0; i < 70; i++) { const x = rnd(i, 1) * W, y = rnd(i, 2) * H; if (x > 470 && x < 2090 && y > 470 && y < 970) continue; simge(i % 6, x, y, .6 + rnd(i, 3) * .5, rnd(i, 4) * 6, "rgba(255,255,255,.08)"); }
+  // güvenli alanın dışı (masaüstü/TV): seçenek balonları
+  balonMini(0, 250, 470, 120, 1); balonMini(1, 330, 990, 105, 2); balonMini(2, 2300, 460, 115, 3); balonMini(3, 2230, 990, 110, 4);
+  // logo rozeti
+  const lx = 760, ly = 720, lr = 205;
+  g.save(); g.shadowColor = "rgba(0,0,0,.5)"; g.shadowBlur = 50; daire(lx, ly, lr, P.lacivert, P.sari, 16); g.restore();
+  g.save(); g.beginPath(); g.arc(lx, ly, lr - 8, 0, Math.PI * 2); g.clip(); g.drawImage(RESIM.bust, lx - lr - 10, ly - lr + 10, (lr + 10) * 2, (lr + 10) * 2); g.restore();
+  daire(lx, ly, lr, null, P.sari, 16); daire(lx, ly, lr + 8, null, INK, 6);
+  soruIsareti(lx + 160, ly - 160, .45, .25);
+  // yazılar: [SEN] OLSAN  ...hangisini seçerdin?
+  const x0 = 1020, ty = 615, sagSinir = 2030;   // güvenli alan: x 507-2053, y 508-931
+  let fb = 190; g.font = `700 ${fb}px ${FONT}`;
+  const olc = (sagSinir - x0) / (g.measureText("SEN").width + 70 + 34 + g.measureText("OLSAN").width + 12); if (olc < 1) fb = Math.floor(fb * olc);
+  g.font = `700 ${fb}px ${FONT}`; const senW = g.measureText("SEN").width + 70 * fb / 190;
+  g.save(); g.shadowColor = "rgba(0,0,0,.45)"; g.shadowOffsetY = 12; g.shadowBlur = 10; sekil(() => g.roundRect(x0, ty - fb * .55, senW, fb * 1.05, fb * .525), P.sari, INK, 14); g.restore();
+  yazi("SEN", x0 + senW / 2, ty, { boyut: fb, renk: INK, kontur: null, golge: false });
+  yazi("OLSAN", x0 + senW + 34, ty, { boyut: fb, renk: "#fff", klw: 24, hiza: "left" });
+  const metin = "...hangisini seçerdin?";
+  g.font = `600 70px ${FONT}`; const sw = g.measureText(metin).width + 90;
+  g.save(); g.shadowColor = "rgba(0,0,0,.4)"; g.shadowOffsetY = 10; g.fillStyle = "#fff"; g.beginPath(); g.roundRect(x0, 735, sw, 110, 55); g.fill(); g.restore();
+  sekil(() => g.roundRect(x0, 735, sw, 110, 55), null, INK, 8);
+  yazi(metin, x0 + 45, 792, { boyut: 70, renk: INK, kontur: null, golge: false, hiza: "left", agirlik: 600 });
+  yazi("Cevabı bilimde.", x0 + 40, 902, { boyut: 44, renk: P.sari, klw: 10, hiza: "left" });
+}
+window.ciz = async (bust) => { await Promise.all([600, 700].map(w => document.fonts.load(`${w} 60px ${FONT}`))); await resimYukle("bust", bust); logoCiz(); bannerCiz(); return true; };
+</script></body></html>
