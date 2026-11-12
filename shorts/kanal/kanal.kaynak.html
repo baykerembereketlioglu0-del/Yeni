@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="tr"><head><meta charset="utf-8"><title>Ya Sonra? – logo & banner</title>
+<html lang="tr"><head><meta charset="utf-8"><title>Miço – logo & banner</title>
 <style>
 /*@FONT:Fredoka:fredoka:600@*/
 /*@FONT:Fredoka:fredoka:700@*/
@@ -58,9 +58,8 @@ function logoCiz() {
   const isik = g.createRadialGradient(512, 320, 40, 512, 320, 540); isik.addColorStop(0, "rgba(255,210,63,.28)"); isik.addColorStop(1, "rgba(255,210,63,0)");
   g.fillStyle = isik; g.fillRect(0, 0, 1024, 1024);
   g.drawImage(RESIM.kafa, 0, 0, 1024, 1024);
-  konusmaBalonu(172, 118, 680, 400, 70);
-  yazi("YA", 512, 232, { boyut: 150, renk: INK, kontur: null, golge: false });
-  yazi("SONRA?", 512, 400, { boyut: 158, renk: INK, kontur: null, golge: false });
+  konusmaBalonu(172, 170, 680, 330, 70);
+  yazi("MİÇO", 512, 345, { boyut: 230, renk: INK, kontur: null, golge: false, iz: 6 });
 }
 
 // ------------------------------------------------ ÇİZİM SİMGELERİ (banner deseni)
@@ -86,14 +85,11 @@ function bannerCiz() {
   g.save(); g.shadowColor = "rgba(0,0,0,.5)"; g.shadowBlur = 50; daire(lx, ly, lr, P.lacivert, P.sari, 16); g.restore();
   g.save(); g.beginPath(); g.arc(lx, ly, lr - 8, 0, Math.PI * 2); g.clip(); g.drawImage(document.getElementById("logo"), lx - lr, ly - lr, lr * 2, lr * 2); g.restore();
   daire(lx, ly, lr, null, P.sari, 16); daire(lx, ly, lr + 8, null, INK, 6);
-  // yazılar: [YA] SONRA?
-  const x0 = 1020, ty = 615, sagSinir = 2030;   // güvenli alan: x 507-2053, y 508-931
-  let fb = 190; g.font = `700 ${fb}px ${FONT}`;
-  const olc = (sagSinir - x0) / (g.measureText("YA").width + 70 + 34 + g.measureText("SONRA?").width + 12); if (olc < 1) fb = Math.floor(fb * olc);
-  g.font = `700 ${fb}px ${FONT}`; const yaW = g.measureText("YA").width + 70 * fb / 190;
-  g.save(); g.shadowColor = "rgba(0,0,0,.45)"; g.shadowOffsetY = 12; g.shadowBlur = 10; sekil(() => g.roundRect(x0, ty - fb * .55, yaW, fb * 1.05, fb * .525), P.sari, INK, 14); g.restore();
-  yazi("YA", x0 + yaW / 2, ty, { boyut: fb, renk: INK, kontur: null, golge: false });
-  yazi("SONRA?", x0 + yaW + 34, ty, { boyut: fb, renk: "#fff", klw: 24, hiza: "left" });
+  // yazılar: MİÇO
+  const x0 = 1020, ty = 615;   // güvenli alan: x 507-2053, y 508-931
+  const fb = 200; g.font = `700 ${fb}px ${FONT}`; g.letterSpacing = "8px"; const adW = g.measureText("MİÇO").width + 120; g.letterSpacing = "0px";
+  g.save(); g.shadowColor = "rgba(0,0,0,.45)"; g.shadowOffsetY = 12; g.shadowBlur = 10; sekil(() => g.roundRect(x0, ty - 112, adW, 214, 107), P.sari, INK, 14); g.restore();
+  yazi("MİÇO", x0 + adW / 2, ty, { boyut: fb, renk: INK, kontur: null, golge: false, iz: 8 });
   const metin = "Hangisini seçerdin?";
   g.font = `600 70px ${FONT}`; const sw = g.measureText(metin).width + 90;
   g.save(); g.shadowColor = "rgba(0,0,0,.4)"; g.shadowOffsetY = 10; g.fillStyle = "#fff"; g.beginPath(); g.roundRect(x0, 735, sw, 110, 55); g.fill(); g.restore();
