@@ -1,5 +1,5 @@
 """ElevenLabs seslendirmesini cümle cümle animasyondaki yerlerine yerleştirir ve kayıt ayarlarını yazar.
-   python3 shorts/02-terlik/seslendirme.py  ->  ses/anlatim_yerlesik.wav + kayit_ayar.json (müziksiz) + kayit_ayar_muzikli.json
+   python3 shorts/02-terlik/seslendirme.py  ->  ses/anlatim_yerlesik.wav + kayit_ayar.json (müziksiz)
 Parçalar (kaynak başlangıç, kaynak bitiş, videodaki başlangıç) ffmpeg silencedetect ile bulunan duraklardan alındı."""
 import json, subprocess, pathlib
 K = pathlib.Path(__file__).parent
@@ -27,15 +27,16 @@ ALTYAZI = [
     [45.5, 47.1, "Peki {en iyisi} hangisi?"], [47.15, 48.3, "Sen nereye {kaçardın?}"], [48.35, 49.95, "{Yorumlara yaz!}"],
 ]
 ON, SON = .06, .08
+# Netlik EQ: boğukluğu (200-350 Hz) azaltır, anlaşılırlığı (2.8-5 kHz) ve parlaklığı artırır, hafif kompresör
+SES_FILTRE = ("highpass=f=90,equalizer=f=180:t=q:w=1:g=-4,equalizer=f=350:t=q:w=1.2:g=-3,equalizer=f=2800:t=q:w=1:g=4,"
+              "equalizer=f=5000:t=q:w=1.4:g=3,treble=g=3:f=9000,acompressor=threshold=-22dB:ratio=3:attack=5:release=90:makeup=2")
 filtre, etiket = [], []
 for i, (a, b, v) in enumerate(PARCALAR):
     a0 = max(0, a - ON); d = round((v - (a - a0)) * 1000)
     filtre.append(f"[0:a]atrim={a0}:{b + SON},asetpts=PTS-STARTPTS,afade=t=in:d=0.02,afade=t=out:st={b + SON - a0 - .03:.3f}:d=0.03,adelay={d}|{d}[p{i}]")
     etiket.append(f"[p{i}]")
-filtre.append("".join(etiket) + f"amix=inputs={len(etiket)}:normalize=0,apad,atrim=0:{SURE}[s]")
+filtre.append("".join(etiket) + f"amix=inputs={len(etiket)}:normalize=0,{SES_FILTRE},apad,atrim=0:{SURE}[s]")
 subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(KAYNAK), "-filter_complex", ";".join(filtre), "-map", "[s]", "-ac", "2", "-ar", "48000", str(HEDEF)], check=True)
 taban = {"anlatim": str(HEDEF.relative_to(K.parent.parent)), "efektSes": 0.45, "altyazi": ALTYAZI}
 json.dump(taban, open(K / "kayit_ayar.json", "w", encoding="utf-8"), ensure_ascii=False, indent=1)
-json.dump(dict(taban, muzik="shorts/01-issiz-ada/muzik/Life_of_Riley.mp3", muzikLufs=-25, muzikBaslangic=0.0, muzikOfset=0),
-          open(K / "kayit_ayar_muzikli.json", "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 print("hazır:", HEDEF)
