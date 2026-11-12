@@ -407,10 +407,19 @@ function sen(x, y, s, o = {}) {
   g.save(); g.scale(1, .25); g.fillStyle = "rgba(0,0,0,.18)"; g.beginPath(); g.arc(0, 0, 95, 0, Math.PI * 2); g.fill(); g.restore();
   // bacaklar + ayakkabı
   const adim = o.yuru ? Math.sin(t * 12) * 16 : 0;
-  cizgi([[-26, -120], [-30 + adim, -8]], C.ten, 26); cizgi([[26, -120], [30 - adim, -8]], C.ten, 26);
-  elips(-36 + adim, 0, 32, 18, "#2B2D42"); elips(36 - adim, 0, 32, 18, "#2B2D42");
+  const diz = o.diz ? 45 : 0, egil = o.egilme || 0;   // diz: diz çökmüş (kalça 45 birim aşağıda), egilme: belden öne eğilme açısı
+  if (diz) { // dizler yerde, ayaklar arkada
+    elips(-50, -14, 26, 14, "#2B2D42"); elips(50, -14, 26, 14, "#2B2D42");
+    cizgi([[-26, -75], [-32, -10]], C.ten, 26); cizgi([[26, -75], [32, -10]], C.ten, 26);
+    daire(-32, -10, 15, C.ten, INK, 6); daire(32, -10, 15, C.ten, INK, 6);
+  } else {
+    cizgi([[-26, -120], [-30 + adim, -8]], C.ten, 26); cizgi([[26, -120], [30 - adim, -8]], C.ten, 26);
+    elips(-36 + adim, 0, 32, 18, "#2B2D42"); elips(36 - adim, 0, 32, 18, "#2B2D42");
+  }
+  if (diz) g.translate(0, diz);
   // şort
   sekil(() => { g.moveTo(-60, -150); g.lineTo(60, -150); g.lineTo(64, -92); g.lineTo(6, -92); g.lineTo(0, -110); g.lineTo(-6, -92); g.lineTo(-64, -92); g.closePath(); }, C.sort);
+  if (egil) { g.translate(0, -120); g.rotate(egil); g.translate(0, 120); }
   // kollar
   const kol = (taraf, aci) => {
     const [a1, a2] = aci; const ox = taraf * 62, oy = -240;
@@ -480,7 +489,12 @@ function sen(x, y, s, o = {}) {
     g.restore();
   }
   // elleri dışarı ver (eşya tutmak için, dünya koordinatı)
-  const donus = (p) => [x + p[0] * s, y + p[1] * s * (o.olcekY || 1)];
+  const donus = (p) => {
+    let [px, py] = p;
+    if (egil) { const vx = px, vy = py + 120, c = Math.cos(egil), sn = Math.sin(egil); px = vx * c - vy * sn; py = vx * sn + vy * c - 120; }
+    py += diz;
+    return [x + px * s, y + py * s * (o.olcekY || 1)];
+  };
   return { elL: donus(elL), elR: donus(elR) };
 }
 
@@ -569,14 +583,14 @@ function parcaciklar(x, y, t0, t, n, renk, guc = 500, tohum = 1, yercekim = 900)
 function kelimeler(m) { const r = []; const re = /\{([^}]*)\}|(\S+)/g; let x; while ((x = re.exec(m))) { if (x[1] !== undefined) x[1].split(/\s+/).filter(Boolean).forEach(w => r.push({ w, s: true })); else r.push({ w: x[2], s: false }); } return r; }
 function altyazi(t) {
   const liste = (window.AYAR && window.AYAR.altyazi) || ALTYAZI;
-  for (const [a, b, m] of liste) {
+  for (const [a, b, m, yUst] of liste) {   // 4. değer verilirse altyazı o yükseklikte durur
     if (t < a || t >= b) continue;
     const ks = kelimeler(m); g.font = `700 74px ${FONT}`;
     const satirlar = [[]]; let gen = 0;
     ks.forEach(k => { const w = g.measureText(k.w + " ").width; if (gen + w > 860 && satirlar[satirlar.length - 1].length) { satirlar.push([]); gen = 0; } satirlar[satirlar.length - 1].push(Object.assign({ gen: w }, k)); gen += w; });
     let i = 0; const cik = 1 - ara(t, b - .12, b);
     satirlar.forEach((s, si) => {
-      const top = s.reduce((n, k) => n + k.gen, 0); let x = W / 2 - top / 2; const y = 1370 + si * 86;
+      const top = s.reduce((n, k) => n + k.gen, 0); let x = W / 2 - top / 2; const y = (yUst || 1370) + si * 86;
       s.forEach(k => {
         const gor = sat((t - a - i * .09) / .14); i++;
         if (gor > 0) yazi(k.w, x + k.gen / 2 - g.measureText(" ").width / 2, y, { boyut: 74, renk: k.s ? C.sari : "#fff", klw: 16, olcek: .7 + .3 * E.back(gor), alfa: gor * cik });
@@ -844,10 +858,14 @@ function sahneOzur(t) {
   const ofke = 1 - E.io(ara(yt, 1.6, 3.2)), sarilma = yt > 5.0;
   // Deniz: durur, özür diler, çömelip lekeyi tamponlar, sonra annesi başını okşar
   if (yt > 3.4 && yt < 5.0) {
-    const tap = Math.sin(t * 10) * .1;
-    const el = sen(470, 1600, 1.0, { ifade: "gulumse", t, olcekY: .62, kolL: [.3, .2], kolR: [.6 + tap, .2 - tap], bak: [.8, .9], etiket: false });
-    yuvarlakDik(el.elR[0] - 38, el.elR[1] - 4, 92, 46, 12, "#7FD3FF"); g.save(); g.strokeStyle = "rgba(255,255,255,.6)"; g.lineWidth = 5; g.beginPath(); g.moveTo(el.elR[0] - 26, el.elR[1] + 8); g.lineTo(el.elR[0] + 40, el.elR[1] + 8); g.stroke(); g.restore();
+    const bas = Math.abs(Math.sin(t * 7));                       // tampon: bastır - kaldır
+    const egilme = E.o(ara(yt, 3.4, 3.7)) * (.5 + .08 * bas);
+    const el = sen(480, 1565, 1.0, { ifade: "gulumse", t, diz: true, egilme, kolL: [.5, .6], kolR: [.22, .12 + .25 * (1 - bas)], bak: [.7, 1], etiket: false });
+    const bx = el.elR[0], by = Math.min(el.elR[1] + 14, LEKE[1] + 10);
+    g.save(); g.translate(bx, by); g.scale(1, .6 + .4 * (1 - bas));
+    yuvarlakDik(-52, -30, 104, 52, 14, "#7FD3FF"); g.strokeStyle = "rgba(255,255,255,.6)"; g.lineWidth = 5; g.beginPath(); g.moveTo(-36, -8); g.lineTo(36, -8); g.moveTo(-36, 8); g.lineTo(36, 8); g.stroke(); g.restore();
     daire(el.elR[0], el.elR[1], 19, C.ten, INK, 6);
+    if (bas > .9) for (let i = 0; i < 3; i++) daire(bx - 40 + i * 40, by + 34, 6, "rgba(160,220,255,.9)", INK, 3);
   } else if (!sarilma) {
     sen(380, 1560, 1.0, { ifade: yt > 1.3 ? "uzgun" : "saskin", t, kolL: [.3, .2], kolR: [.3, .2], bak: [1, 0], gozyasi: yt > 1.6 && yt < 3.2, etiket: yt < KART - .1 });
   }
@@ -911,7 +929,7 @@ const ALTYAZI = [
   [8.8, 10.4, "{Yatağın altı} mı? Çok klasik..."], [10.4, 11.9, "Ama yatağın altı {toz dolu.}"], [11.9, 12.9, "{Hapşu!}"], [12.9, 15.6, "Toz akarları seni {hapşırtır} ve yerini ele verir!"],
   [17.9, 19.0, "{Dolap} mı?"], [19.0, 21.4, "Karanlıkta {hiçbir şey} göremezsin,"], [21.4, 22.9, "her şeye çarparsın... {tangır tungur!}"], [22.9, 26.8, "Çünkü gözün karanlığa tam alışması {yarım saat} sürer!"],
   [27.1, 28.9, "{Babaannenin arkası} mı?"], [28.9, 30.4, "İşte {en güçlü kalkan!}"], [30.4, 32.3, "Araştırmalara göre babaannelerin beyni"], [32.3, 34.2, "torunlarını görünce {sevgiyle parlıyor!}"], [34.3, 36.1, "Ama babaanne {evine dönünce...}"],
-  [36.3, 37.6, "Ya da {hiç kaçma!}"], [37.6, 39.6, "{Özür dile} ve lekeyi"], [39.6, 41.6, "ovmadan, {tamponlayarak} temizle."], [41.6, 45.2, "Araştırmalar, içten bir özrün {öfkeyi azalttığını} gösteriyor!"],
+  [36.3, 37.6, "Ya da {hiç kaçma!}"], [37.6, 39.6, "{Özür dile} ve lekeyi"], [39.6, 41.6, "ovmadan, {tamponlayarak} temizle.", 555], [41.6, 45.2, "Araştırmalar, içten bir özrün {öfkeyi azalttığını} gösteriyor!"],
   [45.5, 47.1, "Peki {en iyisi} hangisi?"], [47.2, 48.4, "Sen nereye {kaçardın?}"], [48.4, 49.95, "{Yorumlara yaz!}"],
 ];
 

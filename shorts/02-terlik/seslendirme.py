@@ -22,7 +22,7 @@ ALTYAZI = [
     [22.9, 25.9, "Çünkü gözün karanlığa tam alışması {yarım saat} sürer!"],
     [27.1, 28.35, "{Babaannenin arkası} mı?"], [28.4, 30.0, "İşte {en güçlü kalkan!}"], [30.1, 32.2, "Araştırmalara göre babaannelerin beyni,"],
     [32.2, 34.4, "torunlarını görünce {sevgiyle parlıyor!}"], [34.45, 36.15, "Ama babaanne {evine dönünce...}"],
-    [36.3, 37.2, "Ya da {hiç kaçma!}"], [37.3, 38.44, "{Özür dile} ve lekeyi"], [38.44, 40.4, "ovmadan, {tamponlayarak} temizle."],
+    [36.3, 37.2, "Ya da {hiç kaçma!}"], [37.3, 38.44, "{Özür dile} ve lekeyi"], [38.44, 40.4, "ovmadan, {tamponlayarak} temizle.", 555],
     [41.0, 44.4, "Araştırmalar, içten bir özrün {öfkeyi azalttığını} gösteriyor!"],
     [45.5, 47.1, "Peki {en iyisi} hangisi?"], [47.15, 48.3, "Sen nereye {kaçardın?}"], [48.35, 49.95, "{Yorumlara yaz!}"],
 ]
