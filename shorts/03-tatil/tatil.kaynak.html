@@ -837,6 +837,62 @@ function sahneDubai(t) {
   secenekCercevesi(2, t, t0, KART);
   gercekKarti(2, t0 + KART, t, "DUBAİ'DE YAZIN SICAKLIK", "45°C+", "gölgede bile görülebilir!", .35);
 }
+// ---------------------------------------------------------------- TURİST (kuyruktaki normal insanlar)
+function turist(x, y, s, o = {}) {
+  const t = o.t || 0, TEN = o.ten || "#F3D0B5", SAC = o.sac || "#3B2A20";
+  g.save(); g.translate(x, y); g.scale(s, s);
+  g.save(); g.scale(1, .25); g.fillStyle = "rgba(0,0,0,.16)"; g.beginPath(); g.arc(0, 0, 100, 0, Math.PI * 2); g.fill(); g.restore();
+  const agirlik = Math.sin(t * 1.5 + x) * 4;
+  if (o.etek) { cizgi([[-26, -150], [-28, -14]], TEN, 26); cizgi([[26, -150], [28, -14]], TEN, 26); }
+  else { cizgi([[-30, -175], [-32, -14]], o.pantolon || "#2B3A67", 34); cizgi([[30, -175], [32, -14]], o.pantolon || "#2B3A67", 34);
+    sekil(() => { g.moveTo(-72, -262); g.lineTo(72, -262); g.lineTo(66, -170); g.lineTo(-66, -170); g.closePath(); }, o.pantolon || "#2B3A67"); }
+  elips(-40, -4, 36, 16, o.ayakkabi || "#2B2D42"); elips(40, -4, 36, 16, o.ayakkabi || "#2B2D42");
+  const govde = () => { g.moveTo(-66, -400); g.quadraticCurveTo(-86, -398, -82, -350); g.lineTo(o.etek ? -96 : -74, o.etek ? -140 : -240); g.quadraticCurveTo(0, o.etek ? -124 : -226, o.etek ? 96 : 74, o.etek ? -140 : -240); g.lineTo(82, -350); g.quadraticCurveTo(86, -398, 66, -400); g.closePath(); };
+  sekil(govde, o.gomlek || "#E07A5F");
+  if (o.desen === "cizgi") { g.save(); g.beginPath(); govde(); g.clip(); g.fillStyle = "rgba(255,255,255,.5)"; for (let i = 0; i < 6; i++) g.fillRect(-100, -390 + i * 40, 200, 14); g.restore(); sekil(govde, null); }
+  if (o.canta) { yuvarlakDik(-96, -390, 30, 130, 12, o.canta, INK, 5); }
+  const kol = (taraf, [a1, a2]) => { const ox = taraf * 70, oy = -380, dx = ox + Math.sin(a1) * 80 * taraf, dy = oy + Math.cos(a1) * 80, ex = dx + Math.sin(a1 + a2) * 74 * taraf, ey = dy + Math.cos(a1 + a2) * 74;
+    cizgi([[ox, oy], [dx, dy]], o.kolRenk || o.gomlek || "#E07A5F", 32); cizgi([[dx, dy], [ex, ey]], TEN, 22); elCiz(ex, ey, Math.atan2(ey - dy, ex - dx), taraf); return [ex, ey]; };
+  kol(-1, o.kolL || [.2, .12]);
+  const elR = kol(1, o.kolR || [.2, .12]);
+  if (o.telefon) { g.save(); g.translate(elR[0], elR[1] - 26); g.rotate(-.15); yuvarlakDik(-22, -40, 44, 72, 8, "#1E1B2E", INK, 4); yuvarlakDik(-16, -32, 32, 52, 4, "#7FD3FF", null, 0); g.restore(); elCiz(elR[0], elR[1], -1.4, 1); }
+  // baş
+  const hy = -488 + agirlik * .2;
+  daire(0, -410, 26, TEN, INK, 6);
+  if (o.sacTip === "uzun") sekil(() => { g.moveTo(-90, hy); g.quadraticCurveTo(-110, hy + 130, -70, hy + 150); g.lineTo(70, hy + 150); g.quadraticCurveTo(110, hy + 130, 90, hy); g.closePath(); }, SAC);
+  elips(-88, hy + 6, 15, 21, TEN); elips(88, hy + 6, 15, 21, TEN);
+  daire(0, hy, 88, TEN);
+  const tip = o.sacTip || "kisa";
+  if (tip === "kisa" || tip === "uzun" || tip === "topuz" || tip === "atkuyrugu") sekil(() => { g.moveTo(-90, hy + 4); g.quadraticCurveTo(-96, hy - 96, 0, hy - 98); g.quadraticCurveTo(96, hy - 96, 90, hy + 4); g.quadraticCurveTo(80, hy - 40, 40, hy - 52); g.quadraticCurveTo(0, hy - 34, -40, hy - 54); g.quadraticCurveTo(-80, hy - 40, -90, hy + 4); g.closePath(); }, SAC);
+  if (tip === "topuz") daire(0, hy - 104, 34, SAC);
+  if (tip === "atkuyrugu") sekil(() => { g.moveTo(70, hy - 60); g.quadraticCurveTo(150, hy - 40, 120, hy + 60); g.quadraticCurveTo(110, hy, 74, hy - 30); g.closePath(); }, SAC);
+  if (tip === "kivircik") for (let i = 0; i < 9; i++) daire(-70 + (i % 5) * 35, hy - 70 - Math.floor(i / 5) * 26 + (i % 2) * 8, 28, SAC, INK, 4);
+  if (tip === "kel") sekil(() => { g.moveTo(-90, hy - 10); g.quadraticCurveTo(-96, hy - 40, -78, hy - 50); g.moveTo(90, hy - 10); g.quadraticCurveTo(96, hy - 40, 78, hy - 50); }, null, SAC, 16);
+  if (o.sapka === "kep") { sekil(() => { g.moveTo(-88, hy - 30); g.quadraticCurveTo(-90, hy - 104, 0, hy - 106); g.quadraticCurveTo(90, hy - 104, 88, hy - 30); g.closePath(); }, o.sapkaRenk || "#E63946"); sekil(() => { g.ellipse(50, hy - 30, 70, 14, .1, 0, Math.PI * 2); }, o.sapkaRenk || "#E63946"); }
+  if (o.sapka === "hasir") { sekil(() => g.ellipse(0, hy - 50, 140, 26, 0, 0, Math.PI * 2), "#E9C46A"); sekil(() => { g.moveTo(-70, hy - 50); g.quadraticCurveTo(-70, hy - 120, 0, hy - 122); g.quadraticCurveTo(70, hy - 120, 70, hy - 50); g.closePath(); }, "#E9C46A"); yuvarlakDik(-70, hy - 70, 140, 16, 4, "#E63946", INK, 4); }
+  // yüz
+  const kirp = ((t + x * .01) % 3.6) < .12 ? .15 : 1, [bx, by] = o.bak || [0, 0];
+  for (const k of [-1, 1]) { elips(k * 30, hy + 4, 15, 18 * kirp, "#fff", INK, 5); if (kirp > .5) daire(k * 30 + bx * 5, hy + 6 + by * 5, 8, INK, null, 0); }
+  for (const k of [-1, 1]) sekil(() => { g.moveTo(k * 30 - 14, hy - 24); g.lineTo(k * 30 + 14, hy - 24 - (o.sikilmis ? -k * 4 : 0)); }, null, SAC === "#E8E8E8" ? "#A9A9A9" : SAC, 8);
+  if (o.gozluk) { for (const k of [-1, 1]) daire(k * 30, hy + 4, 24, "rgba(255,255,255,.2)", INK, 6); sekil(() => { g.moveTo(-6, hy); g.lineTo(6, hy); }, null, INK, 5); }
+  if (o.sakal) sekil(() => { g.moveTo(-80, hy + 10); g.quadraticCurveTo(-80, hy + 90, 0, hy + 94); g.quadraticCurveTo(80, hy + 90, 80, hy + 10); g.quadraticCurveTo(60, hy + 50, 0, hy + 50); g.quadraticCurveTo(-60, hy + 50, -80, hy + 10); g.closePath(); }, SAC);
+  sekil(() => { g.moveTo(-3, hy + 10); g.quadraticCurveTo(9, hy + 26, -2, hy + 30); }, null, "rgba(30,27,46,.5)", 5);
+  if (o.sikilmis) sekil(() => { g.moveTo(-18, hy + 52); g.lineTo(18, hy + 48); }, null, INK, 6);
+  else sekil(() => { g.moveTo(-18, hy + 48); g.quadraticCurveTo(0, hy + 60, 18, hy + 48); }, null, INK, 6);
+  g.restore();
+}
+const TURISTLER = [
+  { ten: "#F6D2B8", sac: "#E8C25A", sacTip: "uzun", gomlek: "#4D96FF", etek: true, ayakkabi: "#E63946", telefon: true, kolR: [2.1, 1.0], bak: [0, -1] },
+  { ten: "#C68E6A", sac: "#1E1714", sacTip: "kisa", gomlek: "#3DAA5C", pantolon: "#C9B79C", sapka: "kep", sapkaRenk: "#E63946", sikilmis: true },
+  { ten: "#F3D0B5", sac: "#6B4428", sacTip: "kel", gomlek: "#FFFFFF", desen: "cizgi", pantolon: "#2B3A67", sakal: true, sikilmis: true, bak: [-1, 0] },
+  { ten: "#8D5B3E", sac: "#1E1714", sacTip: "kivircik", gomlek: "#FFD23F", pantolon: "#1E1B2E", canta: "#9B5DE5", telefon: true, kolR: [2.1, 1.0], bak: [0, -1] },
+  { ten: "#F6D2B8", sac: "#7A4A26", sacTip: "topuz", gomlek: "#E07A5F", etek: true, gozluk: true, sikilmis: true },
+  { ten: "#F1C6A8", sac: "#E8E8E8", sacTip: "kisa", gomlek: "#8E7DBE", pantolon: "#5C677D", sapka: "hasir", gozluk: true },
+  { ten: "#D9A07A", sac: "#3B2A20", sacTip: "atkuyrugu", gomlek: "#FF7A45", pantolon: "#2B3A67", sikilmis: true, bak: [1, 0] },
+  { ten: "#F3D0B5", sac: "#B5651D", sacTip: "kisa", gomlek: "#2A9D8F", pantolon: "#C9B79C", canta: "#E63946", sakal: true },
+  { ten: "#C68E6A", sac: "#1E1714", sacTip: "uzun", gomlek: "#F7F4EC", etek: true, ayakkabi: "#3D5A80", telefon: true, kolR: [2.1, 1.0], bak: [0, -1] },
+  { ten: "#F6D2B8", sac: "#3B2A20", sacTip: "kisa", gomlek: "#E63946", pantolon: "#1E1B2E", gozluk: true, sikilmis: true },
+];
 // ---------------------------------------------------------------- 4) PARİS (36.2 - 45.4)
 function parisArka(t, yakin = 0) {
   const gr = g.createLinearGradient(0, 0, 0, 1300); gr.addColorStop(0, "#7EC8F2"); gr.addColorStop(1, "#FFD6E0"); g.fillStyle = gr; g.fillRect(-60, -60, W + 120, 1360);
@@ -884,8 +940,10 @@ function sahneParis(t) {
   if (!tirman) {
     parisArka(t);
     const kuyruk = yt > 2.0;
-    if (kuyruk) for (let i = 0; i < 14; i++) { const x = 1100 - i * 60 + Math.sin(t * 2 + i) * 4; g.save(); g.globalAlpha = E.o(ara(yt, 2.0 + i * .03, 2.3 + i * .03));
-      daire(x, 1330, 26, ["#E07A5F", "#3D5A80", "#81B29A", "#F2CC8F"][i % 4], INK, 5); yuvarlakDik(x - 26, 1356, 52, 70, 14, ["#3D5A80", "#E07A5F", "#F2CC8F", "#81B29A"][i % 4], INK, 5); g.restore(); }
+    // kule girişine doğru uzanan turist kuyruğu (arkadakiler daha küçük)
+    if (kuyruk) for (let i = TURISTLER.length - 1; i >= 0; i--) { const k = E.back(ara(yt, 2.0 + i * .04, 2.35 + i * .04)); if (k <= 0) continue;
+      const derin = i / (TURISTLER.length - 1), x = lerp(980, 470, derin), y = lerp(1700, 1330, derin), s = lerp(.5, .3, derin);
+      g.save(); g.translate(x, y); g.scale(1, k); g.translate(-x, -y); turist(x, y, s, Object.assign({ t }, TURISTLER[i])); g.restore(); }
     if (kuyruk) { const k = E.back(ara(yt, 2.2, 2.5)); g.save(); g.translate(800, 1180); g.scale(k, k); yuvarlakDik(-190, -50, 380, 100, 20, "#FFFFFF", INK, 7); yazi("ASANSÖR: 2 SAAT", 0, 4, { boyut: 42, renk: C.kirmizi, kontur: null, golge: false }); g.restore(); }
     const el = sen(320, 1640, 1.0, { ifade: kuyruk ? "saskin" : "mutlu", t, kolL: kuyruk ? [.3, .2] : [2.6, .3], kolR: [1.2, 1.4], bak: [1, -.3], etiket: true });
     g.save(); g.translate(el.elR[0] + 10, el.elR[1] - 34); g.rotate(-.2); sekil(() => { g.moveTo(-56, 14); g.quadraticCurveTo(0, -44, 56, 14); g.quadraticCurveTo(0, 2, -56, 14); g.closePath(); }, "#E3A857", INK, 5);
@@ -910,11 +968,14 @@ function sahneParis(t) {
       yuvarlakDik(-40, 1420, W + 80, 120, 0, "#8B5E3C"); sekil(() => { g.moveTo(-40, 1420); g.lineTo(W + 40, 1420); }, null, INK, 8);
       for (let i = 0; i < 12; i++) sekil(() => { g.moveTo(i * 100, 1420); g.lineTo(i * 100, 1300); }, null, "#5A3A21", 8);
       sekil(() => { g.moveTo(-40, 1300); g.lineTo(W + 40, 1300); }, null, INK, 14); sekil(() => { g.moveTo(-40, 1300); g.lineTo(W + 40, 1300); }, null, "#8B5E3C", 7);
-      sen(540, 1430, 1.0, { ifade: "susuz", t, olcekY: .7, kolL: [1.2, .2], kolR: [1.2, .2], ter: true, etiket: false, dil: true });
-      const [hx, hy] = denizBas(540, 1430, 1.0); sapka(hx, 1430 - 342 * .7, 1.0, "fransiz");
+      // dimdik ayakta, bir eliyle korkuluğa yaslanıp soluklanır (büzüşme yok)
+      const nefes = Math.sin(t * 7) * 5;
+      sen(520, 1430 - Math.abs(nefes), 1.0, { ifade: "susuz", t, egik: .07, kolL: [.08, .05], kolR: [1.15, .25], ter: true, etiket: false, dil: true, bak: [0, .4] });
+      { const c = Math.cos(.07), sn = Math.sin(.07), vy = -342; sapka(520 - vy * sn, 1430 - Math.abs(nefes) + vy * c, 1.0, "fransiz"); }
+      for (let i = 0; i < 3; i++) { const f = (t * 1.6 + i / 3) % 1; g.save(); g.globalAlpha = 1 - f; daire(680 + f * 80, 1130 - f * 30 + i * 20, 12 + f * 14, "#FFFFFF", "rgba(30,27,46,.3)", 3); g.restore(); }
       yuvarlakDik(760, 1120, 240, 100, 16, "#FFFFFF", INK, 7); yazi("2. KAT", 880, 1170, { boyut: 60, renk: "#4D96FF", kontur: null, golge: false });
     }
-    if (yt > 5.2) patlamaYazi("BİTTİM!", 540, 1000, t0 + 5.25, t, C.kirmizi, 100);
+    if (yt > 5.2) patlamaYazi("BİTTİM!", 540, 930, t0 + 5.25, t, C.kirmizi, 100);
   }
   pasaportDamga(yt, "PARİS", "#4D96FF");
   secenekCercevesi(3, t, t0, KART);
