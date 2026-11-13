@@ -50,6 +50,8 @@ class GeminiBrain(private val device: DeviceController, private val speaker: Spe
     /** model -> kotanın yenileneceği an (ms) */
     private val exhausted = HashMap<String, Long>()
     private var lastModel: String? = null
+    /** Bu turda modellerin verdiği hatalar (teşhis için ekrana yazılır). */
+    private val lastErrors = LinkedHashMap<String, String>()
 
     @Volatile override var endRequested = false
         private set
@@ -88,22 +90,29 @@ class GeminiBrain(private val device: DeviceController, private val speaker: Spe
         val onText: (String) -> Unit = { t -> sentence.feed(t); JarvisState.appendToLast(t) }
         var flattenedOnce = false
         var retries = 0
+        val failedOnce = HashSet<String>()
+        lastErrors.clear()
 
         try {
             var steps = 0
             while (steps < MAX_STEPS) {
                 coroutineContext.ensureActive()
                 JarvisState.setMode(Mode.THINKING)
-                val model = pickModel(p) ?: return speakError(
-                    "Bugünkü ücretsiz Gemini kotası doldu ${p.hitap}. Kota Türkiye saatiyle sabah on bir civarında yenilenir."
-                )
+                val model = pickModel(p) ?: run {
+                    if (lastErrors.isNotEmpty()) {
+                        JarvisState.add(false, "[Teşhis] " + lastErrors.entries.joinToString(" | ") { "${it.key}: ${it.value}" })
+                        return speakError("Gemini modellerinin hiçbirinden cevap alamadım ${p.hitap}. Ayrıntıyı ekrana yazdım.")
+                    }
+                    return speakError("Bugünkü ücretsiz Gemini kotası doldu ${p.hitap}. Kota Türkiye saatiyle sabah on bir civarında yenilenir.")
+                }
                 if (lastModel != null && lastModel != model && hasFunctionParts()) flatten()
                 lastModel = model
 
                 val result = try {
                     stream(p, model, onText)
                 } catch (e: GeminiError) {
-                    if (++retries > 10) throw e
+                    if (++retries > 12) throw e
+                    if (e.code != 429 || e.perDay) lastErrors[model] = "${e.code} ${e.message.take(160)}"
                     when {
                         e.code == 429 -> {
                             if (!e.perDay && (e.retrySec ?: 60) <= 20) {
@@ -117,6 +126,18 @@ class GeminiBrain(private val device: DeviceController, private val speaker: Spe
                         }
                         e.code == 404 -> {
                             exhausted[model] = Long.MAX_VALUE
+                            continue
+                        }
+                        e.code >= 500 -> {
+                            // Model yoğun ya da iç hata: bir kez bekleyip dene, olmazsa 10 dk bu modeli atla.
+                            lastErrors[model] = "${e.code} ${e.message.take(160)}"
+                            if (failedOnce.add(model)) {
+                                Log.w(TAG, "$model ${e.code}, tekrar deneniyor: ${e.message}")
+                                delay(1500)
+                            } else {
+                                Log.w(TAG, "$model ${e.code}, sonraki modele geçiliyor")
+                                exhausted[model] = System.currentTimeMillis() + 10 * 60_000L
+                            }
                             continue
                         }
                         e.code == 400 && !flattenedOnce && history.size > 1 -> {
@@ -177,6 +198,9 @@ class GeminiBrain(private val device: DeviceController, private val speaker: Spe
         } catch (e: Throwable) {
             Log.e(TAG, "Gemini hatası", e)
             reset()
+            val detail = (e as? GeminiError)?.let { "[Teşhis] ${lastModel}: ${it.code} ${it.status} ${it.message.take(200)}" }
+                ?: "[Teşhis] ${e.javaClass.simpleName}: ${e.message?.take(200)}"
+            JarvisState.add(false, detail)
             return speakError(errorMessage(e))
         }
         return spoken.toString()
