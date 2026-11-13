@@ -478,6 +478,14 @@ function salon(t, o = {}) {
   kapi(805, 650, 215, 600, o.kapi || 0, o.kirmizi || 0);
 }
 
+// ---------------------------------------------------------------- EL (başparmaklı, kol yönüne dönük)
+function elCiz(x, y, aci, taraf = 1) {
+  g.save(); g.translate(x, y); g.rotate(aci);
+  elips(6, 0, 22, 18, C.ten, INK, 6);
+  elips(0, -taraf * 15, 9, 7, C.ten, INK, 5, -.4 * taraf);
+  g.fillStyle = C.ten; g.beginPath(); g.ellipse(4, -taraf * 6, 10, 8, 0, 0, Math.PI * 2); g.fill();
+  g.restore();
+}
 // ---------------------------------------------------------------- KARAKTER: "SEN"
 // o: { ifade, kolL:[omuz,dirsek], kolR, bak:[dx,dy], egik, olcekY, gozluk, dil, ter, gozyasi, etiket, t }
 function sen(x, y, s, o = {}) {
@@ -506,10 +514,9 @@ function sen(x, y, s, o = {}) {
     const dx = ox + Math.sin(a1) * 72 * taraf, dy = oy + Math.cos(a1) * 72;
     const ex = dx + Math.sin(a1 + a2) * 66 * taraf, ey = dy + Math.cos(a1 + a2) * 66;
     cizgi([[ox, oy], [dx, dy]], C.beyaz, 32); cizgi([[dx, dy], [ex, ey]], C.ten, 24);
-    daire(ex, ey, 19, C.ten, INK, 6);
+    elCiz(ex, ey, Math.atan2(ey - dy, ex - dx), taraf);
     return [ex, ey];
   };
-  const elL = kol(-1, o.kolL || [.25, .15]);
   // gövde (çizgili denizci tişörtü)
   const govdeYol = () => { g.moveTo(-58, -250); g.quadraticCurveTo(-74, -250, -70, -200); g.lineTo(-62, -140); g.quadraticCurveTo(0, -128, 62, -140); g.lineTo(70, -200); g.quadraticCurveTo(74, -250, 58, -250); g.closePath(); };
   sekil(govdeYol, C.beyaz);
@@ -519,6 +526,7 @@ function sen(x, y, s, o = {}) {
   // fular
   sekil(() => { g.moveTo(-34, -252); g.lineTo(34, -252); g.lineTo(0, -206); g.closePath(); }, C.fular);
   sekil(() => { g.moveTo(0, -214); g.lineTo(-12, -190); g.lineTo(12, -190); g.closePath(); }, C.fular, INK, 5);
+  const elL = kol(-1, o.kolL || [.25, .15]);
   const elR = kol(1, o.kolR || [.25, .15]);
   // kafa
   const hy = -342;
