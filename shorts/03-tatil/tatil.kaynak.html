@@ -794,45 +794,45 @@ function sahneDubai(t) {
   const sicak = ara(yt, 3.0, 4.6);
   dubaiArka(t, sicak);
   deve(860, 1600, .9, t);
-  // --- ERİME: önce terler, dondurması akar; sonra yavaşça eriyip renkli bir su birikintisine dönüşür
-  const eri = E.io(ara(yt, 3.9, 5.3)), DX = 400, DY = 1610;
-  const olc = 1 - eri * .64, sal = yt > 3.2 ? Math.sin(t * 5) * .05 * (1 - eri) : 0;
-  const birikinti = (on) => { // on: sadece ön yarı (ayakları örtmek için)
-    const rx = 70 + eri * 230, ry = 20 + eri * 46;
-    g.save(); if (on) { g.beginPath(); g.rect(DX - 400, DY, 800, 300); g.clip(); }
-    sekil(() => { for (let i = 0; i <= 40; i++) { const a2 = i / 40 * Math.PI * 2, r = 1 + .1 * Math.sin(a2 * 6 + t * 3) * eri; const px = DX + Math.cos(a2) * rx * r, py = DY + Math.sin(a2) * ry * r; i ? g.lineTo(px, py) : g.moveTo(px, py); } g.closePath(); }, C.ten, INK, 7);
-    g.save(); g.beginPath(); g.ellipse(DX, DY, rx * .95, ry * .95, 0, 0, Math.PI * 2); g.clip();
-    for (let i = 0; i < 4; i++) { g.strokeStyle = i % 2 ? C.lacivert : "#FFFFFF"; g.lineWidth = 10 + eri * 8; g.beginPath(); g.ellipse(DX + 30 * eri, DY + 4, rx * (.75 - i * .14), ry * (.75 - i * .14), 0, 0, Math.PI * 2); g.stroke(); }
-    g.fillStyle = C.sort; g.beginPath(); g.ellipse(DX - rx * .45, DY + 6, rx * .22, ry * .4, 0, 0, Math.PI * 2); g.fill();
-    g.fillStyle = "rgba(255,255,255,.45)"; g.beginPath(); g.ellipse(DX - rx * .5, DY - ry * .4, rx * .18, ry * .18, 0, 0, Math.PI * 2); g.fill();
-    g.restore(); g.restore();
-  };
-  if (eri > 0) birikinti(false);
-  const el = sen(DX, DY, 1.0, { ifade: eri > .5 ? "uzgun" : yt > 3.4 ? "susuz" : "mutlu", t, olcekY: olc, egik: sal, kolL: yt > 3.4 ? [.5 + eri * .6, -.2] : [2.6, .3], kolR: yt > 3.4 ? [.9, .9] : [2.6, .3],
-    ter: yt > 3.2, bak: [0, .6], etiket: yt < KART - .1, dil: yt > 3.4 && eri < .5 });
-  if (eri > 0) {
-    birikinti(true);
-    // gövdeden süzülen damlalar
-    for (let i = 0; i < 8; i++) { const f = ((t * 1.2 + i / 8) % 1), yan = i % 2 ? 1 : -1, dx = DX + yan * (55 + (i % 3) * 14) * (1 + eri * .4), y0 = DY - 260 * olc + (i % 4) * 30 * olc;
-      const yy = lerp(y0, DY - 10, f), r = (10 + (i % 3) * 4) * (.6 + eri);
-      g.save(); g.globalAlpha = sat(eri * 3) * (1 - f * .3); g.translate(dx, yy);
-      sekil(() => { g.moveTo(0, -r * 1.8); g.quadraticCurveTo(r, 0, 0, r); g.quadraticCurveTo(-r, 0, 0, -r * 1.8); }, i % 3 === 0 ? "#FFFFFF" : C.ten, INK, 4); g.restore(); }
-    // erime kenarı: tişört ve şort aşağı akıyor
-    for (let i = 0; i < 6; i++) { const x = DX - 75 + i * 30, uz = (30 + (i % 3) * 22) * eri; sekil(() => { g.moveTo(x - 12, DY - 150 * olc); g.lineTo(x - 12, DY - 150 * olc + uz); g.quadraticCurveTo(x, DY - 150 * olc + uz + 18, x + 12, DY - 150 * olc + uz); g.lineTo(x + 12, DY - 150 * olc); g.closePath(); }, i % 2 ? C.sort : "#FFFFFF", INK, 4); }
-  }
-  // elde eriyen dondurma (3.0 - 4.3)
-  if (yt > 3.0 && yt < 4.4) { const k = ara(yt, 3.0, 4.2); g.save(); g.translate(el.elR[0] + 16, el.elR[1] - 30); g.rotate(-.2);
+  // --- AŞIRI SICAK: yüz kızarır, ter içinde kalır, yelpazelenir; kızgın kumda ayakları yanar ve zıplar; dondurma erir, düşer
+  const DX = 400, DY = 1610, sicakk = ara(yt, 3.0, 3.8), zipla = yt > 4.0 && yt < 6.6;
+  const hop = zipla ? Math.abs(Math.sin(t * 13)) * 60 : 0, ayak = zipla ? (Math.sin(t * 13) > 0 ? .12 : -.12) : 0;
+  // eriyen dondurmanın kumdaki birikintisi
+  const dus = ara(yt, 4.4, 4.75);
+  if (dus >= 1) { const yay = E.o(ara(yt, 4.75, 5.6)); elips(560, 1626, 30 + yay * 50, 10 + yay * 12, "#FF9FC2", INK, 5); g.save(); g.translate(560 + 40, 1600); g.rotate(1.1); sekil(() => { g.moveTo(-22, 0); g.lineTo(22, 0); g.lineTo(0, 60); g.closePath(); }, "#E3A857", INK, 5); g.restore(); }
+  if (zipla) elips(DX, DY + 6, 90, 20, "rgba(0,0,0,.12)", null, 0);
+  const el = sen(DX, DY - hop, 1.0, { ifade: yt > 3.4 ? "susuz" : "mutlu", t, egik: ayak + (yt > 3.2 && !zipla ? Math.sin(t * 4) * .04 : 0), yuru: zipla,
+    kolL: zipla ? [2.5 + Math.sin(t * 13) * .3, .3] : yt > 3.4 ? [2.2 + Math.sin(t * 12) * .25, 1.1] : [2.6, .3],
+    kolR: yt > 3.0 && yt < 4.45 ? [.9, .9] : zipla ? [2.5 - Math.sin(t * 13) * .3, .3] : [2.6, .3],
+    ter: yt > 3.1, bak: zipla ? [0, .8] : [0, -.4], etiket: yt < KART - .1, dil: yt > 3.4 });
+  const [hx, hy] = denizBas(DX, DY - hop, 1.0);
+  if (yt < 3.4) sapka(hx, hy, 1.0, "gozluk");
+  // kızaran yüz
+  if (sicakk > 0) { g.save(); g.globalAlpha = .38 * sicakk; g.fillStyle = "#FF3B3B"; g.beginPath(); g.ellipse(hx, hy + 20, 80, 60, 0, 0, Math.PI * 2); g.fill(); g.restore(); }
+  // kafadan buhar + uçuşan ter damlaları
+  if (yt > 3.3) for (let i = 0; i < 6; i++) { const f = (t * 1.4 + i / 6) % 1, k2 = i % 2 ? 1 : -1; g.save(); g.globalAlpha = (1 - f) * .75 * sat((yt - 3.3) * 2);
+    daire(hx + k2 * (40 + f * 60), hy - 110 - f * 170, 16 + f * 22, "#FFFFFF", "rgba(30,27,46,.3)", 4); g.restore(); }
+  if (zipla) for (let i = 0; i < 6; i++) { const f = (t * 2 + i / 6) % 1, a2 = -Math.PI / 2 + (i - 2.5) * .5; g.save(); g.globalAlpha = 1 - f; g.translate(hx + Math.cos(a2) * (100 + f * 120), hy + Math.sin(a2) * (60 + f * 100) + f * f * 160);
+    sekil(() => { g.moveTo(0, -14); g.quadraticCurveTo(10, 4, 0, 9); g.quadraticCurveTo(-10, 4, 0, -14); }, "#7FD3FF", INK, 3); g.restore(); }
+  // kızgın kumdan çıkan dumancıklar (ayak altı)
+  if (zipla) for (let i = 0; i < 4; i++) { const f = (t * 1.8 + i / 4) % 1; g.save(); g.globalAlpha = (1 - f) * .6; daire(DX - 60 + i * 40, DY - f * 70, 8 + f * 12, "#FFFFFF", null, 0); g.restore(); }
+  // elde eriyen dondurma -> düşer
+  if (yt > 3.0 && dus < 1) { const k = ara(yt, 3.0, 4.4), x0 = el.elR[0] + 16, y0 = el.elR[1] - 30;
+    const x = dus > 0 ? lerp(x0, 560, dus) : x0, y = dus > 0 ? lerp(y0, 1600, E.q(dus)) : y0;
+    g.save(); g.translate(x, y); g.rotate(-.2 + dus * 3);
     sekil(() => { g.moveTo(-26, 0); g.lineTo(26, 0); g.lineTo(0, 70); g.closePath(); }, "#E3A857", INK, 5);
-    sekil(() => { g.ellipse(0, -6, 30 * (1 - k * .5), 30 * (1 - k * .7), 0, 0, Math.PI * 2); }, "#FF9FC2", INK, 5);
-    for (let i = 0; i < 3; i++) { const f = (t * 1.5 + i / 3) % 1; daire(-16 + i * 16, 10 + f * 90 * k, 6, "#FF9FC2", INK, 3); } g.restore(); }
-  const [hx, hy] = denizBas(DX, DY, olc); if (yt < 3.4) sapka(hx, hy, 1.0, "gozluk");
+    sekil(() => { g.ellipse(0, -6, 30 * (1 - k * .3), 30 * (1 - k * .45), 0, 0, Math.PI * 2); }, "#FF9FC2", INK, 5);
+    if (dus === 0) for (let i = 0; i < 3; i++) { const f = (t * 1.5 + i / 3) % 1; daire(-16 + i * 16, 14 + f * 80 * k, 6, "#FF9FC2", INK, 3); }
+    g.restore(); }
+  patlamaYazi("PLOP!", 640, 1500, t0 + 4.75, t, "#FF6FA8", 80, .1);
+  if (zipla) { const k = E.back(ara(yt, 4.1, 4.35)); yazi("AYAKLARIM!", 760, 1200, { boyut: 70, renk: C.kirmizi, klw: 14, olcek: k, aci: .08 + Math.sin(t * 13) * .03 }); }
   if (yt < 3.0 && yt > 1.2) patlamaYazi("SÜPER!", 640, 980, t0 + 1.3, t, "#F4A100", 100);
   // termometre
   const tk = ara(yt, 3.0, 3.2); if (tk > 0) { const der = Math.round(lerp(25, 47, ara(yt, 3.1, 4.4))), dol = ara(yt, 3.1, 4.4);
     g.save(); g.translate(840, 1090); g.scale(E.back(tk), E.back(tk)); g.rotate(yt > 4.4 ? Math.sin(t * 40) * .05 : 0);
     yuvarlakDik(-34, -300, 68, 330, 34, "#FFFFFF", INK, 8); daire(0, 50, 56, C.kirmizi, INK, 8); yuvarlakDik(-16, -280 + 280 * (1 - dol), 32, 280 * dol + 40, 16, C.kirmizi, null, 0);
     yazi(der + "°C", 0, -350, { boyut: 72, renk: C.kirmizi, klw: 12 }); g.restore(); }
-  if (yt > 4.2) patlamaYazi("ERİYORUM!", 460, 1060, t0 + 4.2, t, C.kirmizi, 96);
+  patlamaYazi("ÇOK SICAK!", 470, 1000, t0 + 3.5, t, C.kirmizi, 96);
   pasaportDamga(yt, "DUBAİ", "#F4A100");
   secenekCercevesi(2, t, t0, KART);
   gercekKarti(2, t0 + KART, t, "DUBAİ'DE YAZIN SICAKLIK", "45°C+", "gölgede bile görülebilir!", .35);
