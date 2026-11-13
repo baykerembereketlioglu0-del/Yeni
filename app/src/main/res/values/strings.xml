@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Jarvis</string>
+    <string name="a11y_desc">Jarvis\'in sesli komutla tableti kapatabilmesi, ekranı kilitleyebilmesi, ekrandakileri okuyup dokunabilmesi ve ekran görüntüsü alabilmesi için gereklidir. Jarvis bu izni yalnızca sizin sesli isteklerinizi yerine getirmek için kullanır.</string>
+</resources>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Jarvis" parent="Theme.MaterialComponents.NoActionBar">
+        <item name="colorPrimary">#00E5FF</item>
+        <item name="colorPrimaryVariant">#0097A7</item>
+        <item name="colorOnPrimary">#04101A</item>
+        <item name="colorSecondary">#00E5FF</item>
+        <item name="colorAccent">#00E5FF</item>
+        <item name="android:windowBackground">#040A12</item>
+        <item name="android:textColorPrimary">#CDF0FF</item>
+        <item name="android:colorBackground">#040A12</item>
+    </style>
+    <style name="Theme.Jarvis.Fullscreen">
+        <item name="android:windowFullscreen">true</item>
+    </style>
+</resources>
