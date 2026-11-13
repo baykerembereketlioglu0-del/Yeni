@@ -56,6 +56,31 @@ class Prefs(context: Context) {
     var ttsRate: Float get() = sp.getFloat("ttsRate", 1.0f); set(v) = put("ttsRate", v)
     var ttsPitch: Float get() = sp.getFloat("ttsPitch", 0.9f); set(v) = put("ttsPitch", v)
 
+    // --- Ses kilidi (yalnızca sahibin sesi) ---
+    var voiceLock: Boolean get() = sp.getBoolean("voiceLock", false); set(v) = put("voiceLock", v)
+    var voiceThreshold: Float get() = sp.getFloat("voiceThreshold", 0.5f); set(v) = put("voiceThreshold", v)
+    var voiceProfile: FloatArray?
+        get() = runCatching {
+            val arr = JSONArray(str("voiceProfile", ""))
+            FloatArray(arr.length()) { arr.getDouble(it).toFloat() }
+        }.getOrNull()?.takeIf { it.isNotEmpty() }
+        set(v) = put("voiceProfile", if (v == null) "" else JSONArray(v.map { it.toDouble() }).toString())
+
+    // --- Ders/çalışma programı ---
+    /** [{gun:1-7, bas:"HH:mm", bit:"HH:mm", ad:"...", detay:"..."}] */
+    var program: JSONArray
+        get() = runCatching { JSONArray(str("program", "[]")) }.getOrDefault(JSONArray())
+        set(v) = put("program", v.toString())
+    /** [{tarih, ad, durum: yapildi|kismen|yapilmadi, not}] */
+    var programLog: JSONArray
+        get() = runCatching { JSONArray(str("programLog", "[]")) }.getOrDefault(JSONArray())
+        set(v) = put("programLog", v.toString())
+    var programRemindStart: Boolean get() = sp.getBoolean("progStart", true); set(v) = put("progStart", v)
+    var programAskEnd: Boolean get() = sp.getBoolean("progEnd", true); set(v) = put("progEnd", v)
+
+    /** Son silinen galeri öğeleri (geri almak için). */
+    var lastTrashed: String get() = str("lastTrashed", ""); set(v) = put("lastTrashed", v)
+
     // --- Hafıza ---
     var memories: List<String>
         get() = jsonList("memories")

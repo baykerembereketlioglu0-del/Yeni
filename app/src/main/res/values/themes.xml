@@ -13,4 +13,11 @@
     <style name="Theme.Jarvis.Fullscreen">
         <item name="android:windowFullscreen">true</item>
     </style>
+    <style name="Theme.Jarvis.Transparent" parent="Theme.MaterialComponents.NoActionBar">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:backgroundDimEnabled">false</item>
+        <item name="android:windowAnimationStyle">@null</item>
+    </style>
 </resources>

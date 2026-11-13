@@ -14,7 +14,13 @@ import com.jarvis.asistan.JarvisApp
  * Mikrofonu arka planda dinler ve "Hey Jarvis" duyulduğunda [onWake] çağırır.
  * Konuşma tanıma başlamadan önce [stop] ile mikrofon serbest bırakılmalıdır.
  */
-class WakeWordListener(private val context: Context, private val onWake: () -> Unit) {
+class WakeWordListener(
+    private val context: Context,
+    /** Sabit eşik (kayıt ekranı için); null ise ayarlardaki eşik kullanılır. */
+    private val thresholdOverride: Float? = null,
+    /** "Hey Jarvis" algılandığında, sözün ham sesi (16 kHz PCM, ~2 sn) ile çağrılır. */
+    private val onWake: (ShortArray) -> Unit,
+) {
 
     @Volatile private var running = false
     /** Her start() yeni bir nesil başlatır; eski iş parçacıkları kendi nesilleri bitince durur. */
@@ -89,6 +95,7 @@ class WakeWordListener(private val context: Context, private val onWake: () -> U
         val chunk = ShortArray(OpenWakeWord.CHUNK)
         var hits = 0
         var fired = false
+        var utterance = ShortArray(0)
         try {
             rec.startRecording()
             while (alive()) {
@@ -100,10 +107,20 @@ class WakeWordListener(private val context: Context, private val onWake: () -> U
                 }
                 if (!alive() || off < chunk.size) break
                 val score = eng.process(chunk)
-                val threshold = JarvisApp.prefs.wakeThreshold
+                val threshold = thresholdOverride ?: JarvisApp.prefs.wakeThreshold
                 hits = if (score >= threshold) hits + 1 else 0
                 if (hits >= 1) {
                     Log.i(TAG, "Hey Jarvis algılandı (skor=$score)")
+                    // Sözün sonu kesilmesin diye ~0.4 sn daha dinle.
+                    val tail = ShortArray(OpenWakeWord.CHUNK * 5)
+                    var got = 0
+                    while (got < tail.size) {
+                        val n = rec.read(tail, got, tail.size - got)
+                        if (n <= 0) break
+                        got += n
+                    }
+                    val before = eng.recent(16000 * 2)
+                    utterance = before + tail.copyOf(got)
                     fired = true
                     break
                 }
@@ -118,7 +135,7 @@ class WakeWordListener(private val context: Context, private val onWake: () -> U
             if (generation == gen) running = false
         }
         // Mikrofon tamamen serbest bırakıldıktan sonra haber ver.
-        if (fired && generation == gen) onWake()
+        if (fired && generation == gen) onWake(utterance)
     }
 
     fun release() {

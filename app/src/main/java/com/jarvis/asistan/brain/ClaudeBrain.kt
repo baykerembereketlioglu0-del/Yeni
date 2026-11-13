@@ -14,12 +14,15 @@ import com.anthropic.errors.RateLimitException
 import com.anthropic.errors.UnauthorizedException
 import com.anthropic.helpers.MessageAccumulator
 import com.anthropic.models.messages.Base64ImageSource
+import com.anthropic.models.messages.ComputerToolset20260801
 import com.anthropic.models.messages.CacheControlEphemeral
 import com.anthropic.models.messages.ContentBlockParam
 import com.anthropic.models.messages.Message
 import com.anthropic.models.messages.MessageCreateParams
 import com.anthropic.models.messages.MessageParam
 import com.anthropic.models.messages.OutputConfig
+import com.anthropic.models.messages.RawContentBlockDeltaEvent
+import com.anthropic.models.messages.RawMessageStreamEvent
 import com.anthropic.models.messages.StopReason
 import com.anthropic.models.messages.Tool
 import com.anthropic.models.messages.ToolResultBlockParam
@@ -30,6 +33,7 @@ import com.anthropic.models.messages.WebSearchTool20260209
 import com.jarvis.asistan.JarvisApp
 import com.jarvis.asistan.JarvisState
 import com.jarvis.asistan.device.DeviceController
+import com.jarvis.asistan.device.ToolOutput
 import com.jarvis.asistan.voice.Speaker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
@@ -50,6 +54,8 @@ class ClaudeBrain(private val device: DeviceController, private val speaker: Spe
     private var systemPrompt: String = ""
     private var tools: List<Tool>? = null
     private var lastActivity = 0L
+    /** Geçmişteki görüntü sayısı (istek başına görüntü sınırını aşmamak için). */
+    private var imagesInHistory = 0
     /** Sunucu tarafı yedek model parametresi reddedilirse kapatılır. */
     private var useFallbacks = true
 
@@ -59,6 +65,7 @@ class ClaudeBrain(private val device: DeviceController, private val speaker: Spe
 
     fun reset() {
         history.clear()
+        imagesInHistory = 0
         systemPrompt = ""
     }
 
@@ -79,9 +86,10 @@ class ClaudeBrain(private val device: DeviceController, private val speaker: Spe
 
     /**
      * Kullanıcının sözüne (veya bir otomatik olaya) cevap verir. Cevap seslendirilir.
+     * @param image isteğe bağlı JPEG (base64), örn. paylaşılan ders programı fotoğrafı.
      * @return Jarvis'in söylediği tam metin.
      */
-    suspend fun respond(userText: String): String {
+    suspend fun respond(userText: String, image: String? = null): String {
         endRequested = false
         val p = JarvisApp.prefs
         val c = client() ?: return speakError(
@@ -90,12 +98,14 @@ class ClaudeBrain(private val device: DeviceController, private val speaker: Spe
 
         val now = System.currentTimeMillis()
         // Uzun aradan sonra temiz bir sohbet başlat (maliyeti ve gecikmeyi düşük tutar).
-        if (now - lastActivity > 15 * 60_000 || history.size > 60) reset()
+        if (now - lastActivity > 15 * 60_000 || history.size > 60 || imagesInHistory >= IMAGE_BUDGET) reset()
         lastActivity = now
         if (systemPrompt.isEmpty()) systemPrompt = Persona.systemPrompt(p)
         val toolList = tools ?: Tools.toApiTools().also { tools = it }
 
-        history.add(MessageParam.ofUser(Persona.contextLine(p, device.batteryPercent()) + "\n" + userText))
+        val userLine = Persona.contextLine(p, device.batteryPercent()) + "\n" + userText
+        history.add(userMessage(userLine, image))
+        if (image != null) imagesInHistory++
 
         JarvisState.newReply()
         val spoken = StringBuilder()
@@ -103,23 +113,15 @@ class ClaudeBrain(private val device: DeviceController, private val speaker: Spe
             speaker.enqueue(s)
             spoken.append(s).append(' ')
         }
+        val onText: (String) -> Unit = { delta ->
+            sentence.feed(delta)
+            JarvisState.appendToLast(delta)
+        }
 
         try {
             repeat(MAX_STEPS) {
-                val params = buildParams(p.model, p.effort, toolList)
                 JarvisState.setMode(com.jarvis.asistan.Mode.THINKING)
-                val onText: (String) -> Unit = { delta ->
-                    sentence.feed(delta)
-                    JarvisState.appendToLast(delta)
-                }
-                val message = try {
-                    stream(c, params, onText)
-                } catch (e: BadRequestException) {
-                    if (!useFallbacks || e.message?.contains("fallback", ignoreCase = true) != true) throw e
-                    Log.w(TAG, "fallbacks parametresi reddedildi, onsuz tekrar deneniyor", e)
-                    useFallbacks = false
-                    stream(c, buildParams(p.model, p.effort, toolList), onText)
-                }
+                val message = call(c, p, toolList, history, onText)
                 sentence.flush()
                 history.add(message.toParam())
 
@@ -127,13 +129,15 @@ class ClaudeBrain(private val device: DeviceController, private val speaker: Spe
                 when (stop) {
                     StopReason.TOOL_USE -> {
                         val uses = message.content().mapNotNull { it.toolUse().orElse(null) }
-                        val results = uses.map { runTool(it, sentence) }
+                        val results = runTools(uses, sentence)
                         history.add(MessageParam.ofUserOfContentBlockParams(results))
                         // Yalnızca vedalaşma yapıldıysa tekrar sormaya gerek yok: sohbeti kapat.
                         if (endRequested && uses.all { it.name() == "sohbeti_bitir" || it.name() == "konus" }) {
                             reset()
                             return spoken.toString()
                         }
+                        // Görüntü sınırına yaklaşıldıysa uzun ekran görevini yeni bir bağlama devret.
+                        if (imagesInHistory >= IMAGE_BUDGET) handoff(c, p, toolList, results, userText)
                     }
                     StopReason.PAUSE_TURN -> { /* sunucu aracı (web araması) sürüyor; devam et */ }
                     StopReason.REFUSAL -> {
@@ -144,6 +148,7 @@ class ClaudeBrain(private val device: DeviceController, private val speaker: Spe
                     else -> return spoken.toString()
                 }
             }
+            speaker.enqueue("Bu görev beklenenden uzun sürdü ${p.hitap}, burada durdum. İsterseniz kaldığım yerden devam edebilirim.")
         } catch (e: kotlinx.coroutines.CancellationException) {
             // Kullanıcı sözü kesti. Yarım kalan araç çağrısı geçmişi bozabileceği için sohbeti sıfırla.
             reset()
@@ -157,16 +162,72 @@ class ClaudeBrain(private val device: DeviceController, private val speaker: Spe
         return spoken.toString()
     }
 
-    private fun buildParams(model: String, effort: String, toolList: List<Tool>): MessageCreateParams {
+    private fun userMessage(text: String, image: String?): MessageParam =
+        if (image == null) MessageParam.ofUser(text)
+        else MessageParam.ofUserOfContentBlockParams(
+            listOf(
+                ContentBlockParam.ofText(text),
+                ContentBlockParam.ofImage(
+                    Base64ImageSource.builder().mediaType(Base64ImageSource.MediaType.IMAGE_JPEG).data(image).build()
+                ),
+            )
+        )
+
+    private suspend fun call(
+        c: AnthropicClient, p: com.jarvis.asistan.Prefs, toolList: List<Tool>,
+        messages: List<MessageParam>, onText: (String) -> Unit,
+    ): Message = try {
+        stream(c, buildParams(p.model, p.effort, toolList, messages), onText)
+    } catch (e: BadRequestException) {
+        if (!useFallbacks || e.message?.contains("fallback", ignoreCase = true) != true) throw e
+        Log.w(TAG, "fallbacks parametresi reddedildi, onsuz tekrar deneniyor", e)
+        useFallbacks = false
+        stream(c, buildParams(p.model, p.effort, toolList, messages), onText)
+    }
+
+    /**
+     * Uzun ekran görevlerinde istek başına görüntü sınırı aşılmasın diye: Claude'dan şimdiye kadarki
+     * ilerlemenin özetini ister ve görevi bu özetle temiz bir bağlamda sürdürür.
+     */
+    private suspend fun handoff(
+        c: AnthropicClient, p: com.jarvis.asistan.Prefs, toolList: List<Tool>,
+        lastResults: List<ContentBlockParam>, task: String,
+    ) {
+        Log.i(TAG, "Görüntü bütçesi doldu, görev devrediliyor")
+        val ask = history.dropLast(1) + MessageParam.ofUserOfContentBlockParams(
+            lastResults + ContentBlockParam.ofText(
+                "[SİSTEM] Bağlam sınırına ulaşıldı; görev temiz bir oturumda sürecek. Şimdi HİÇBİR araç kullanmadan, " +
+                    "yalnızca düz metinle şunları yaz: görevin tam tanımı, şu ana kadar tamamlanan adımlar, ekranın şu anki durumu " +
+                    "ve sıradaki adımlar. Kısa ve kesin ol."
+            )
+        )
+        val summary = runCatching {
+            call(c, p, toolList, ask) {}.content().mapNotNull { it.text().orElse(null)?.text() }.joinToString("\n")
+        }.getOrDefault("")
+        history.clear()
+        imagesInHistory = 0
+        history.add(
+            MessageParam.ofUser(
+                Persona.contextLine(p, device.batteryPercent()) + "\n" + task +
+                    "\n\n[GÖREV DEVRİ — bu görev önceki bir oturumda başladı. Önceki oturumun notları:]\n" +
+                    summary.ifBlank { "(özet alınamadı)" } +
+                    "\n\nKaldığın yerden devam et; önce screenshot al. Zaten yapılmış adımları tekrarlama."
+            )
+        )
+    }
+
+    private fun buildParams(model: String, effort: String, toolList: List<Tool>, messages: List<MessageParam>): MessageCreateParams {
         val p = JarvisApp.prefs
         val b = MessageCreateParams.builder()
             .model(model)
             .maxTokens(16000L)
             .system(systemPrompt)
-            .messages(history)
+            .messages(messages)
             .cacheControl(CacheControlEphemeral.builder().build())
             .outputConfig(OutputConfig.builder().effort(OutputConfig.Effort.of(effort)).build())
         toolList.forEach { b.addTool(it) }
+        // Claude'un ekranı bir insan gibi kullanabilmesi için bilgisayar kullanımı araç seti.
+        b.addTool(ComputerToolset20260801.builder().build())
         val location = UserLocation.builder()
             .country("TR")
             .timezone("Europe/Istanbul")
@@ -192,9 +253,23 @@ class ClaudeBrain(private val device: DeviceController, private val speaker: Spe
         runInterruptible(Dispatchers.IO) {
             c.messages().createStreaming(params).use { sr ->
                 val it = sr.stream().iterator()
+                // Girdisiz araç çağrılarında (ör. screenshot) hiç girdi parçası gelmezse birleştirici hata verir;
+                // bu durumda blok kapanmadan önce boş bir girdi parçası ekle.
+                val toolBlocksWithoutInput = HashSet<Long>()
                 while (it.hasNext()) {
                     if (Thread.interrupted()) throw InterruptedException()
                     val ev = it.next()
+                    ev.contentBlockStart().ifPresent { st ->
+                        val cb = st.contentBlock()
+                        if (cb.toolUse().isPresent || cb.serverToolUse().isPresent) toolBlocksWithoutInput.add(st.index())
+                    }
+                    ev.contentBlockDelta().ifPresent { d -> if (d.delta().inputJson().isPresent) toolBlocksWithoutInput.remove(d.index()) }
+                    ev.contentBlockStop().ifPresent { st ->
+                        if (toolBlocksWithoutInput.remove(st.index())) {
+                            acc.accumulate(RawMessageStreamEvent.ofContentBlockDelta(
+                                RawContentBlockDeltaEvent.builder().index(st.index()).inputJsonDelta("").build()))
+                        }
+                    }
                     acc.accumulate(ev)
                     ev.contentBlockDelta().flatMap { d -> d.delta().text() }.ifPresent { t ->
                         if (t.text().isNotEmpty()) onText(t.text())
@@ -205,34 +280,60 @@ class ClaudeBrain(private val device: DeviceController, private val speaker: Spe
         return acc.message()
     }
 
-    private suspend fun runTool(use: ToolUseBlock, sentence: SentenceSplitter): ContentBlockParam {
+    /** Bir yanıttaki tüm araç çağrılarını sırayla çalıştırır. */
+    private suspend fun runTools(uses: List<ToolUseBlock>, sentence: SentenceSplitter): List<ContentBlockParam> {
+        var computerFailed = false
+        return uses.map { use ->
+            val isComputer = use.toolsetName().orElse(null) == "computer"
+            if (isComputer && computerFailed) {
+                // Toplu ekran eylemlerinde ilk hatadan sonrakiler çalıştırılmaz.
+                toolResult(use, ToolOutput("Not executed: an earlier computer action in this turn failed.", isError = true))
+            } else {
+                val out = runTool(use, isComputer, sentence)
+                if (isComputer && out.isError) computerFailed = true
+                if (out.imageBase64 != null) imagesInHistory++
+                toolResult(use, out)
+            }
+        }
+    }
+
+    private suspend fun runTool(use: ToolUseBlock, isComputer: Boolean, sentence: SentenceSplitter): ToolOutput {
         coroutineContext.ensureActive()
-        val input: JSONObject? = try {
+        val input: JSONObject = try {
             JSONObject(jsonMapper().writeValueAsString(use._input()))
         } catch (e: Exception) {
-            null
+            return ToolOutput("INVALID_JSON: araç girdisi okunamadı, tekrar dene.", isError = true)
         }
-        val result = if (input == null) {
-            com.jarvis.asistan.device.ToolOutput("INVALID_JSON: araç girdisi okunamadı, tekrar dene.", isError = true)
-        } else {
-            Log.i(TAG, "Araç: ${use.name()} $input")
-            when (use.name()) {
-                "konus" -> {
-                    val text = input.optString("metin")
-                    sentence.feedSentence(text)
-                    JarvisState.appendToLast(if (text.endsWith(" ")) text else "$text ")
-                }
-                "sohbeti_bitir" -> endRequested = true
-            }
-            if (Tools.waitsForSpeech(use.name())) speaker.awaitIdle(15_000)
-            try {
-                Tools.execute(device, use.name(), input)
+        Log.i(TAG, "Araç: ${if (isComputer) "computer." else ""}${use.name()} ${input.toString().take(300)}")
+        if (isComputer) {
+            JarvisState.setMode(com.jarvis.asistan.Mode.THINKING)
+            return try {
+                device.computer.execute(use.name(), input)
             } catch (e: Exception) {
-                Log.e(TAG, "Araç hatası", e)
-                com.jarvis.asistan.device.ToolOutput("Hata: ${e.message}", isError = true)
+                Log.e(TAG, "Ekran eylemi hatası", e)
+                ToolOutput("Hata: ${e.message}", isError = true)
             }
         }
+        when (use.name()) {
+            "konus" -> {
+                val text = input.optString("metin")
+                sentence.feedSentence(text)
+                JarvisState.appendToLast(if (text.endsWith(" ")) text else "$text ")
+            }
+            "sohbeti_bitir" -> endRequested = true
+        }
+        if (Tools.waitsForSpeech(use.name())) speaker.awaitIdle(15_000)
+        return try {
+            Tools.execute(device, use.name(), input)
+        } catch (e: Exception) {
+            Log.e(TAG, "Araç hatası", e)
+            ToolOutput("Hata: ${e.message}", isError = true)
+        }
+    }
+
+    private fun toolResult(use: ToolUseBlock, result: ToolOutput): ContentBlockParam {
         val b = ToolResultBlockParam.builder().toolUseId(use.id())
+        use.toolsetName().ifPresent { b.toolsetName(it) }
         if (result.imageBase64 != null) {
             b.contentOfBlocks(
                 listOf(
@@ -312,6 +413,7 @@ class ClaudeBrain(private val device: DeviceController, private val speaker: Spe
 
     companion object {
         private const val TAG = "JarvisBrain"
-        private const val MAX_STEPS = 12
+        private const val MAX_STEPS = 60
+        private const val IMAGE_BUDGET = 16
     }
 }

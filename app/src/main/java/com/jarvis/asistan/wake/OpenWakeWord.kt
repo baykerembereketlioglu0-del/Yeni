@@ -87,6 +87,10 @@ class OpenWakeWord(
         return if (predictions <= 5) 0f else score
     }
 
+    /** Son [samples] örneklik ham ses (konuşmacı doğrulaması için). */
+    fun recent(samples: Int): ShortArray =
+        if (raw.size <= samples) raw.copyOf() else raw.copyOfRange(raw.size - samples, raw.size)
+
     private fun appendRaw(chunk: ShortArray) {
         val merged = ShortArray(raw.size + chunk.size)
         System.arraycopy(raw, 0, merged, 0, raw.size)

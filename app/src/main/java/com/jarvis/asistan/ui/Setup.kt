@@ -76,6 +76,22 @@ object Setup {
             { a ->
                 safeStart(a, Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:${a.packageName}")))
             }),
+        Step("Tüm dosyalara erişim (galeri)",
+            "Galerideki fotoğraf/videoları listeleyip silebilmesi, klasörlere ayırabilmesi, YouTube'a gönderebilmesi ve dosyalarını okuyabilmesi için. Açılan ekranda Jarvis'e izin ver.",
+            { Build.VERSION.SDK_INT < 30 || android.os.Environment.isExternalStorageManager() },
+            { safeStart(it, Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, Uri.parse("package:${it.packageName}"))) }),
+        Step("Fotoğraf ve videolar", "Galerideki fotoğraf ve videolara erişim.",
+            { if (Build.VERSION.SDK_INT >= 33) granted(it, Manifest.permission.READ_MEDIA_IMAGES) else granted(it, Manifest.permission.READ_EXTERNAL_STORAGE) },
+            {
+                val perms = if (Build.VERSION.SDK_INT >= 33) arrayOf(Manifest.permission.READ_MEDIA_IMAGES, Manifest.permission.READ_MEDIA_VIDEO)
+                else arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
+                ActivityCompat.requestPermissions(it, perms, 4)
+            }),
+        Step("Ses kilidi: sesini tanıt",
+            "Jarvis yalnızca SENİN \"Hey Jarvis\" demene cevap versin. 5 kez \"Hey Jarvis\" diyerek sesini kaydet (tablet başkasının elindeyken bile sesinle kapatabilmen için).",
+            { JarvisApp.prefs.voiceProfile != null },
+            { it.startActivity(Intent(it, VoiceEnrollActivity::class.java)) },
+            essential = false),
         Step("Sistem ayarlarını değiştirme", "Parlaklığı ayarlayabilmesi için.",
             { Settings.System.canWrite(it) },
             { safeStart(it, Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS, Uri.parse("package:${it.packageName}"))) },

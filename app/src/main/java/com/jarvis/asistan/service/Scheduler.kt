@@ -16,7 +16,9 @@ import java.time.format.DateTimeFormatter
 object Scheduler {
     private const val ACTION_REMINDER = "com.jarvis.asistan.REMINDER"
     private const val ACTION_EVENING = "com.jarvis.asistan.EVENING"
+    private const val ACTION_PROGRAM = "com.jarvis.asistan.PROGRAM"
     private const val EVENING_ID = 7
+    private const val PROGRAM_ID = 9
     private val fmt = DateTimeFormatter.ofPattern("d MMMM EEEE HH:mm", java.util.Locale("tr"))
 
     private fun am(ctx: Context) = ctx.getSystemService(AlarmManager::class.java)
@@ -87,6 +89,24 @@ object Scheduler {
         }
         p.reminders = all
         scheduleEvening(ctx)
+        scheduleNextProgram(ctx)
+    }
+
+    /** Programdaki bir sonraki başlangıç/bitiş anı için alarm kurar (tetiklenince bir sonrakini kurar). */
+    fun scheduleNextProgram(ctx: Context) {
+        val p = JarvisApp.prefs
+        val pi = { extras: Intent.() -> Unit ->
+            PendingIntent.getBroadcast(ctx, PROGRAM_ID,
+                Intent(ctx, AlarmReceiver::class.java).setAction(ACTION_PROGRAM).apply(extras),
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        }
+        am(ctx).cancel(pi {})
+        val next = com.jarvis.asistan.device.Program.nextEvent(p.programRemindStart, p.programAskEnd) ?: return
+        val (at, kind, item) = next
+        setExact(ctx, at, pi {
+            putExtra("kind", kind)
+            putExtra("info", "${item.ad}|${item.bas}|${item.bit}|${item.detay}")
+        })
     }
 
     fun scheduleEvening(ctx: Context) {
@@ -111,6 +131,13 @@ object Scheduler {
                     val msg = intent.getStringExtra("msg") ?: "Hatırlatma"
                     removeReminder(id)
                     JarvisService.sendEvent(context, JarvisService.EVENT_REMINDER, msg)
+                }
+                ACTION_PROGRAM -> {
+                    val kind = intent.getStringExtra("kind")
+                    val info = intent.getStringExtra("info").orEmpty()
+                    scheduleNextProgram(context)
+                    JarvisService.sendEvent(context,
+                        if (kind == "start") JarvisService.EVENT_PROGRAM_START else JarvisService.EVENT_PROGRAM_END, info)
                 }
                 ACTION_EVENING -> {
                     scheduleEvening(context) // yarın için tekrar kur

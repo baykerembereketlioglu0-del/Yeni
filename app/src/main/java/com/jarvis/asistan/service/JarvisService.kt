@@ -28,6 +28,7 @@ import com.jarvis.asistan.device.DeviceController
 import com.jarvis.asistan.ui.MainActivity
 import com.jarvis.asistan.voice.Listener
 import com.jarvis.asistan.voice.Speaker
+import com.jarvis.asistan.wake.VoiceLock
 import com.jarvis.asistan.wake.WakeWordListener
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -55,8 +56,12 @@ class JarvisService : LifecycleService() {
 
     private var conversation: Job? = null
     private var replyJob: Job? = null
-    private val pendingEvents = ArrayDeque<String>()
+    /** Bekleyen otomatik olay: metin + isteğe bağlı görüntü (base64 JPEG). */
+    data class Ev(val text: String, val image: String? = null)
+    private val pendingEvents = ArrayDeque<Ev>()
     private var ready = false
+    /** Ses kaydı ekranı mikrofonu kullanırken uyandırma dinlemesi durur. */
+    private var wakePaused = false
     /** Servis mikrofon tipiyle ön planda mı? (değilse arka planda mikrofon sessiz kalır) */
     private var micForeground = false
 
@@ -72,11 +77,14 @@ class JarvisService : LifecycleService() {
         speaker = Speaker(this)
         listener = Listener(this)
         brain = ClaudeBrain(device, speaker)
-        wake = WakeWordListener(this) { lifecycleScope.launch { onWakeWord() } }
+        wake = WakeWordListener(this) { audio -> lifecycleScope.launch { onWakeWord(audio) } }
 
         ContextCompat.registerReceiver(this, unlockReceiver, IntentFilter(Intent.ACTION_USER_PRESENT), ContextCompat.RECEIVER_EXPORTED)
         Scheduler.rescheduleAll(this)
 
+        if (VoiceLock.isActive) lifecycleScope.launch(Dispatchers.Default) {
+            runCatching { VoiceLock.verifier(this@JarvisService) } // ilk doğrulamada gecikme olmasın
+        }
         lifecycleScope.launch {
             speaker.awaitReady()
             ready = true
@@ -97,8 +105,29 @@ class JarvisService : LifecycleService() {
             }
         }
         when (intent?.action) {
-            ACTION_TALK -> lifecycleScope.launch { onWakeWord() }
+            ACTION_TALK -> lifecycleScope.launch {
+                if (VoiceLock.isActive && replyJob?.isActive != true && conversation?.isActive != true) {
+                    // Ses kilidi açıkken düğmeyle başlatılamaz: sahibin sesi doğrulanmalı.
+                    JarvisState.setPartial("Ses kilidi açık: lütfen \"Hey Jarvis\" deyin")
+                    delay(3000)
+                    JarvisState.setPartial("")
+                } else onWakeWord(null)
+            }
             ACTION_EVENT -> handleEvent(intent.getStringExtra(EXTRA_TYPE).orEmpty(), intent.getStringExtra(EXTRA_PAYLOAD).orEmpty())
+            ACTION_SHARE -> {
+                val img = pendingShareImage
+                pendingShareImage = null
+                handleShare(intent.getStringExtra(EXTRA_PAYLOAD).orEmpty(), img)
+            }
+            ACTION_PAUSE_WAKE -> lifecycleScope.launch {
+                wakePaused = true
+                withContext(Dispatchers.IO) { wake.stop() }
+                JarvisState.setMode(Mode.OFF)
+            }
+            ACTION_RESUME_WAKE -> lifecycleScope.launch {
+                wakePaused = false
+                if (conversation?.isActive != true) idle()
+            }
             ACTION_STOP -> {
                 shutdown()
                 return START_NOT_STICKY
@@ -150,7 +179,7 @@ class JarvisService : LifecycleService() {
 
     /** Bekleme moduna dön: uyandırma kelimesini dinle. */
     private suspend fun idle() {
-        if (JarvisApp.prefs.wakeEnabled && hasMic()) {
+        if (JarvisApp.prefs.wakeEnabled && hasMic() && !wakePaused) {
             withContext(Dispatchers.IO) { wake.start() }
             JarvisState.setMode(Mode.IDLE)
         } else {
@@ -158,8 +187,20 @@ class JarvisService : LifecycleService() {
         }
     }
 
-    /** "Hey Jarvis" duyuldu ya da Konuş'a basıldı. */
-    private suspend fun onWakeWord() {
+    /** "Hey Jarvis" duyuldu ([audio] ile) ya da Konuş'a basıldı ([audio] = null). */
+    private suspend fun onWakeWord(audio: ShortArray?) {
+        if (audio != null && VoiceLock.isActive) {
+            val r = withContext(Dispatchers.Default) { VoiceLock.check(this@JarvisService, audio) }
+            if (!r.accepted) {
+                // Sahibin sesi değil: tepki verme, dinlemeye devam et.
+                JarvisState.setPartial("Ses tanınmadı (benzerlik %${(r.score * 100).toInt()})")
+                lifecycleScope.launch { delay(2500); JarvisState.setPartial("") }
+                if (replyJob?.isActive == true || conversation?.isActive == true) {
+                    if (replyJob?.isActive == true) withContext(Dispatchers.IO) { wake.start() }
+                } else idle()
+                return
+            }
+        }
         val reply = replyJob
         if (reply?.isActive == true) {
             // Jarvis konuşurken sözü kesildi: sus ve dinle.
@@ -171,7 +212,7 @@ class JarvisService : LifecycleService() {
         startConversation(null)
     }
 
-    private fun startConversation(event: String?) {
+    private fun startConversation(event: Ev?) {
         if (!ready || conversation?.isActive == true) {
             if (event != null) pendingEvents.addLast(event)
             return
@@ -195,14 +236,16 @@ class JarvisService : LifecycleService() {
         pendingEvents.removeFirstOrNull()?.let { startConversation(it) }
     }
 
-    private suspend fun runConversation(firstEvent: String?) {
+    private suspend fun runConversation(firstEvent: Ev?) {
         withContext(Dispatchers.IO) { wake.stop() }
         var event = firstEvent
         var first = true
         while (lifecycleScope.isActive) {
             val text: String
+            var image: String? = null
             if (event != null) {
-                text = event
+                text = event.text
+                image = event.image
                 event = null
             } else {
                 if (!hasMic()) {
@@ -233,7 +276,7 @@ class JarvisService : LifecycleService() {
 
             // Cevap verirken "Hey Jarvis" ile sözünü kesebilmek için uyandırmayı dinle.
             JarvisState.setMode(Mode.THINKING)
-            val job = lifecycleScope.async { brain.respond(text) }
+            val job = lifecycleScope.async { brain.respond(text, image) }
             replyJob = job
             withContext(Dispatchers.IO) { wake.start() }
             try {
@@ -303,10 +346,23 @@ class JarvisService : LifecycleService() {
                 Persona.eveningEvent(p)
             }
             EVENT_REMINDER -> Persona.reminderEvent(payload)
+            EVENT_PROGRAM_START -> {
+                if (!p.programRemindStart) return
+                Persona.programStartEvent(payload)
+            }
+            EVENT_PROGRAM_END -> {
+                if (!p.programAskEnd) return
+                Persona.programEndEvent(payload)
+            }
             else -> return
         }
         Log.i(TAG, "Olay: $type")
-        startConversation(text)
+        startConversation(Ev(text))
+    }
+
+    /** Başka bir uygulamadan Jarvis'e paylaşılan metin/görüntü. */
+    private fun handleShare(text: String, image: String?) {
+        startConversation(Ev(Persona.shareEvent(text, image != null), image))
     }
 
     private fun shutdown() {
@@ -334,12 +390,28 @@ class JarvisService : LifecycleService() {
         const val ACTION_EVENT = "com.jarvis.asistan.EVENT"
         const val ACTION_STOP = "com.jarvis.asistan.STOP"
         const val ACTION_REFRESH = "com.jarvis.asistan.REFRESH"
+        const val ACTION_SHARE = "com.jarvis.asistan.SHARE"
+        const val ACTION_PAUSE_WAKE = "com.jarvis.asistan.PAUSE_WAKE"
+        const val ACTION_RESUME_WAKE = "com.jarvis.asistan.RESUME_WAKE"
         const val EXTRA_TYPE = "type"
         const val EXTRA_PAYLOAD = "payload"
         const val EVENT_MORNING = "morning"
         const val EVENT_DENEME = "deneme"
         const val EVENT_EVENING = "evening"
         const val EVENT_REMINDER = "reminder"
+        const val EVENT_PROGRAM_START = "program_start"
+        const val EVENT_PROGRAM_END = "program_end"
+
+        /** Paylaşılan görüntü (Intent ile taşınamayacak kadar büyük olabilir). */
+        @Volatile var pendingShareImage: String? = null
+
+        fun share(ctx: Context, text: String, imageBase64: String?) {
+            pendingShareImage = imageBase64
+            runCatching {
+                ContextCompat.startForegroundService(ctx,
+                    Intent(ctx, JarvisService::class.java).setAction(ACTION_SHARE).putExtra(EXTRA_PAYLOAD, text))
+            }.onFailure { Log.w(TAG, "Paylaşım iletilemedi", it) }
+        }
 
         @Volatile var instance: JarvisService? = null
             private set

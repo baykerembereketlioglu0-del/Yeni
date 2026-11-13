@@ -124,6 +124,28 @@ class SettingsActivity : AppCompatActivity() {
             if (runCatching { LocalDate.parse(it.trim()) }.isSuccess) p.yksDate = it
         }
 
+        form.addView(Ui.title(this, "SES KİLİDİ (YALNIZCA SENİN SESİN)"))
+        val hasProfile = p.voiceProfile != null
+        form.addView(Ui.text(this, if (hasProfile) "Ses profilin kayıtlı ✓ (Jarvis kullandıkça sesine uyum sağlar)." else "Henüz ses profili yok.", 14f, if (hasProfile) Ui.GOOD else Ui.DIM))
+        switch("Yalnızca benim sesime cevap ver", p.voiceLock) { p.voiceLock = it && p.voiceProfile != null }
+        slider("Ses kilidi sıkılığı", 0.25f, 0.8f, p.voiceThreshold, { v ->
+            when {
+                v < 0.4f -> "gevşek (%.2f)".format(v)
+                v < 0.6f -> "dengeli (%.2f)".format(v)
+                else -> "sıkı (%.2f) — seni de bazen tanımayabilir".format(v)
+            }
+        }) { p.voiceThreshold = it }
+        form.addView(Ui.button(this, if (hasProfile) "Sesimi yeniden tanıt" else "Sesimi tanıt") {
+            saveAll()
+            startActivity(android.content.Intent(this, VoiceEnrollActivity::class.java))
+        }, Ui.lp(-2, -2).apply { topMargin = Ui.dp(this@SettingsActivity, 8) })
+
+        form.addView(Ui.title(this, "DERS PROGRAMI"))
+        form.addView(Ui.text(this, com.jarvis.asistan.device.Program.show(null), 14f, Ui.DIM))
+        form.addView(Ui.text(this, "Programını Jarvis'e sesle söyleyebilir ya da fotoğrafını Paylaş → \"Jarvis'e gönder\" ile atabilirsin.", 13f, Ui.DIM).apply { setPadding(0, 8, 0, 0) })
+        switch("Program saatinde hatırlat", p.programRemindStart) { p.programRemindStart = it }
+        switch("Bitince \"yaptın mı?\" diye sor", p.programAskEnd) { p.programAskEnd = it }
+
         form.addView(Ui.title(this, "SABAH"))
         switch("Alarm kapanınca günaydın de", p.morningEnabled) { p.morningEnabled = it }
         switch("Sabah tableti ilk açtığımda da günaydın de", p.morningOnUnlock) { p.morningOnUnlock = it }
@@ -199,6 +221,7 @@ class SettingsActivity : AppCompatActivity() {
     private fun saveAll() {
         savers.forEach { it() }
         Scheduler.scheduleEvening(this)
+        Scheduler.scheduleNextProgram(this)
         JarvisService.command(this, JarvisService.ACTION_REFRESH)
     }
 

@@ -45,6 +45,8 @@ data class ToolOutput(val text: String, val imageBase64: String? = null, val isE
 
 /** Tabletin donanım ve sistem özelliklerine erişim. */
 class DeviceController(private val ctx: Context) {
+    val context: Context get() = ctx
+
 
     private val tr = Locale("tr", "TR")
     private val audio get() = ctx.getSystemService(AudioManager::class.java)
@@ -57,6 +59,11 @@ class DeviceController(private val ctx: Context) {
 
     private fun norm(s: String) = s.lowercase(tr).replace('ı', 'i').replace("ğ", "g").replace("ü", "u")
         .replace("ş", "s").replace("ö", "o").replace("ç", "c").replace(Regex("[^a-z0-9 ]"), "").trim()
+
+    val media = MediaTools(ctx)
+    val computer = ComputerUse(ctx)
+
+    fun launchIntent(intent: Intent): Boolean = launch(intent)
 
     private fun launch(intent: Intent): Boolean = try {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
