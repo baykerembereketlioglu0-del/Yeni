@@ -11,8 +11,8 @@ android {
         applicationId = "com.jarvis.asistan"
         minSdk = 29
         targetSdk = 35
-        versionCode = 2
-        versionName = "2.0"
+        versionCode = 3
+        versionName = "2.1"
         ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
     }
 
@@ -66,6 +66,7 @@ dependencies {
 
     implementation("com.anthropic:anthropic-java:3.8.0")
     implementation("com.microsoft.onnxruntime:onnxruntime-android:1.32.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
     implementation("androidx.core:core-ktx:1.15.0")
     implementation("androidx.appcompat:appcompat:1.7.0")

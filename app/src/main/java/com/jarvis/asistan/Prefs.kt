@@ -21,6 +21,13 @@ class Prefs(context: Context) {
         }
     }.apply()
 
+    // --- Beyin sağlayıcısı ---
+    /** "gemini" (ücretsiz katman) veya "claude" */
+    var provider: String get() = str("provider", "gemini"); set(v) = put("provider", v)
+    var geminiKey: String get() = str("geminiKey", ""); set(v) = put("geminiKey", v.trim())
+    /** "auto" = kotası olan en uygun modeli kendisi seçer */
+    var geminiModel: String get() = str("geminiModel", "auto"); set(v) = put("geminiModel", v.trim().ifEmpty { "auto" })
+
     // --- Claude ---
     var apiKey: String get() = str("apiKey", ""); set(v) = put("apiKey", v.trim())
     var model: String get() = str("model", "claude-opus-5-5"); set(v) = put("model", v)

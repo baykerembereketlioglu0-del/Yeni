@@ -24,11 +24,29 @@ sistemini kontrol eder. YKS'ye hazırlanan bir öğrenci için koçluk özellikl
 
 ## Kurulum
 
-### 1. Claude API anahtarı al
-1. <https://console.anthropic.com> adresinde hesap aç.
-2. **Billing** bölümünden bakiye yükle (Claude.ai aboneliğinden ayrıdır; kullandıkça ödenir).
-3. **Settings → Limits** bölümünden aylık harcama limiti koymanı öneririm.
-4. **API Keys → Create Key** ile anahtar oluştur ve kopyala (`sk-ant-...`).
+### 1. Yapay zekâ anahtarı al
+
+Jarvis iki beyinle çalışabilir (Ayarlar → Yapay zekâ):
+
+**Google Gemini — ücretsiz (varsayılan)**
+1. <https://aistudio.google.com> adresine Google hesabınla gir.
+2. **Get API key → Create API key** ile anahtar oluştur (`AIza...`). Kart gerekmez.
+3. Jarvis → Ayarlar → **Gemini API anahtarı** kutusuna yapıştır, **Kaydet**.
+
+Model "auto" iken Jarvis, kotası olan en iyi Gemini modelini kendisi seçer; bir modelin günlük ücretsiz
+kotası dolunca otomatik olarak bir sonrakine geçer. Ücretsiz katmanda günlük/dakikalık istek sınırları
+vardır ve Google ücretsiz katmanda gönderilen verileri (kamera fotoğrafları dahil) ürünlerini geliştirmek
+için kullanabilir. Gemini aboneliği (Google AI Pro) API'ye dahil değildir; ücretsiz anahtar yeterlidir.
+
+**Claude — ücretli API**
+1. <https://platform.claude.com> adresinde hesap aç, **Billing**'den bakiye yükle (Claude.ai
+   aboneliğinden ayrıdır), **Limits**'ten harcama limiti koy.
+2. **API Keys → Create Key** ile anahtar oluştur (`sk-ant-...`), Jarvis → Ayarlar → Claude bölümüne yapıştır
+   ve Yapay zekâ'yı "Claude" yap.
+
+Gemini ile her şey çalışır; tek fark ekran görevleridir: Claude'un ekranı insan gibi kullanmak için
+eğitilmiş araç seti yalnızca Claude'da var. Gemini ekranı yazılar ve ekran görüntüsü üzerinden kullanır;
+uzun ekran görevlerinde (ör. YouTube'a yükleme) daha sık takılabilir.
 
 ### 2. APK'yı kur
 1. `Jarvis.apk` dosyasını tablete indir (GitHub'da bu deponun **Releases → "Jarvis — son sürüm"** bölümünde de bulunur; her güncellemede otomatik yenilenir).
@@ -67,7 +85,7 @@ sistemini kontrol eder. YKS'ye hazırlanan bir öğrenci için koçluk özellikl
 
 ## Maliyet
 
-Claude API kullandıkça ücretlendirilir. Varsayılan model **Claude Opus 5.5** (en akıllı) — kısa bir sesli
+Gemini ücretsiz katmanı ücretsizdir (kota sınırları içinde). Claude API kullandıkça ücretlendirilir. Varsayılan model **Claude Opus 5.5** (en akıllı) — kısa bir sesli
 etkileşim yaklaşık 2–5 sent tutar (ekran görevleri daha pahalıdır, yukarıya bak). Daha ucuz seçenekler Ayarlar → Model'de:
 **Claude Sonnet 5.5** (yaklaşık yarı fiyat) ve **Claude Haiku 5.5** (çok daha ucuz, en hızlı).
 Konuşmalar 15 dakika sessizlikten sonra sıfırlanır; bu, maliyeti ve gecikmeyi düşük tutar.

@@ -110,9 +110,17 @@ class SettingsActivity : AppCompatActivity() {
     private fun build() {
         form.addView(Ui.text(this, "AYARLAR", 22f, Ui.CYAN, true).apply { letterSpacing = 0.3f })
 
-        form.addView(Ui.title(this, "BEYİN (CLAUDE)"))
-        field("Claude API anahtarı (console.anthropic.com > API Keys)", p.apiKey, "sk-ant-...", secret = true) { p.apiKey = it }
-        spinner("Model", models, p.model) { p.model = it }
+        form.addView(Ui.title(this, "BEYİN"))
+        spinner("Yapay zekâ", listOf("gemini" to "Google Gemini (ücretsiz katman)", "claude" to "Claude (ücretli API)"), p.provider) { p.provider = it }
+
+        form.addView(Ui.title(this, "GEMINI"))
+        form.addView(Ui.text(this, "Ücretsiz anahtar: aistudio.google.com > Get API key > Create API key. Kart gerekmez.", 13f, Ui.DIM))
+        field("Gemini API anahtarı", p.geminiKey, "AIza...", secret = true) { p.geminiKey = it }
+        field("Model (\"auto\" = kotası olan en iyi modeli kendisi seçer)", p.geminiModel, "auto") { p.geminiModel = it }
+
+        form.addView(Ui.title(this, "CLAUDE"))
+        field("Claude API anahtarı (platform.claude.com > API Keys)", p.apiKey, "sk-ant-...", secret = true) { p.apiKey = it }
+        spinner("Claude modeli", models, p.model) { p.model = it }
         spinner("Düşünme hızı", efforts, p.effort) { p.effort = it }
 
         form.addView(Ui.title(this, "SEN"))

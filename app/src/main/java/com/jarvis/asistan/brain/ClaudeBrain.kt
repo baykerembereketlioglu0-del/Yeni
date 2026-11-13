@@ -46,7 +46,7 @@ import kotlin.coroutines.coroutineContext
  * Jarvis'in beyni: konuşma geçmişini tutar, Claude'a akışlı istek atar,
  * cümleleri geldikçe seslendirir ve araç çağrılarını tablette çalıştırır.
  */
-class ClaudeBrain(private val device: DeviceController, private val speaker: Speaker) {
+class ClaudeBrain(private val device: DeviceController, private val speaker: Speaker) : Brain {
 
     private var client: AnthropicClient? = null
     private var clientKey: String = ""
@@ -60,10 +60,10 @@ class ClaudeBrain(private val device: DeviceController, private val speaker: Spe
     private var useFallbacks = true
 
     /** Claude `sohbeti_bitir` çağırdıysa true olur. */
-    @Volatile var endRequested = false
+    @Volatile override var endRequested = false
         private set
 
-    fun reset() {
+    override fun reset() {
         history.clear()
         imagesInHistory = 0
         systemPrompt = ""
@@ -89,7 +89,7 @@ class ClaudeBrain(private val device: DeviceController, private val speaker: Spe
      * @param image isteğe bağlı JPEG (base64), örn. paylaşılan ders programı fotoğrafı.
      * @return Jarvis'in söylediği tam metin.
      */
-    suspend fun respond(userText: String, image: String? = null): String {
+    override suspend fun respond(userText: String, image: String?): String {
         endRequested = false
         val p = JarvisApp.prefs
         val c = client() ?: return speakError(
@@ -100,7 +100,7 @@ class ClaudeBrain(private val device: DeviceController, private val speaker: Spe
         // Uzun aradan sonra temiz bir sohbet başlat (maliyeti ve gecikmeyi düşük tutar).
         if (now - lastActivity > 15 * 60_000 || history.size > 60 || imagesInHistory >= IMAGE_BUDGET) reset()
         lastActivity = now
-        if (systemPrompt.isEmpty()) systemPrompt = Persona.systemPrompt(p)
+        if (systemPrompt.isEmpty()) systemPrompt = Persona.systemPrompt(p, claude = true)
         val toolList = tools ?: Tools.toApiTools().also { tools = it }
 
         val userLine = Persona.contextLine(p, device.batteryPercent()) + "\n" + userText

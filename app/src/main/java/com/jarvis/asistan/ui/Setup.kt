@@ -47,8 +47,9 @@ object Setup {
     }
 
     val steps: List<Step> = listOf(
-        Step("Claude API anahtarı", "Jarvis'in beyni Claude'dur; anahtar olmadan düşünemez.",
-            { JarvisApp.prefs.apiKey.isNotBlank() },
+        Step("Yapay zekâ anahtarı",
+            "Jarvis'in beyni için anahtar gerekir. Ücretsiz Gemini anahtarı: aistudio.google.com > Get API key > Create API key. Ayarlar'a yapıştır.",
+            { val p = JarvisApp.prefs; if (p.provider == "claude") p.apiKey.isNotBlank() else p.geminiKey.isNotBlank() },
             { it.startActivity(Intent(it, SettingsActivity::class.java)) }),
         Step("Mikrofon", "\"Hey Jarvis\" demeni duyabilmesi için.",
             { granted(it, Manifest.permission.RECORD_AUDIO) },

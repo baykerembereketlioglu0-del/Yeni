@@ -94,7 +94,7 @@ class MainActivity : AppCompatActivity() {
         (setupBtn as? android.widget.Button)?.text = if (missing.isEmpty()) "Kurulum ✓" else "Kurulum (${missing.size})"
         val days = p.yksDaysLeft()
         info.text = buildString {
-            append("Model: ").append(p.model)
+            append("Beyin: ").append(if (p.provider == "claude") p.model else "Gemini (${p.geminiModel})")
             if (days != null && days >= 0) append("   •   TYT'ye $days gün")
         }
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {

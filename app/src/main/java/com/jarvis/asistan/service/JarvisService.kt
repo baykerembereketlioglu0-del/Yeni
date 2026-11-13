@@ -22,7 +22,9 @@ import com.jarvis.asistan.JarvisApp
 import com.jarvis.asistan.JarvisState
 import com.jarvis.asistan.Mode
 import com.jarvis.asistan.R
+import com.jarvis.asistan.brain.Brain
 import com.jarvis.asistan.brain.ClaudeBrain
+import com.jarvis.asistan.brain.GeminiBrain
 import com.jarvis.asistan.brain.Persona
 import com.jarvis.asistan.device.DeviceController
 import com.jarvis.asistan.ui.MainActivity
@@ -51,7 +53,8 @@ class JarvisService : LifecycleService() {
     private lateinit var speaker: Speaker
     private lateinit var listener: Listener
     private lateinit var wake: WakeWordListener
-    private lateinit var brain: ClaudeBrain
+    private lateinit var brain: Brain
+    private var brainProvider = ""
     private lateinit var device: DeviceController
 
     private var conversation: Job? = null
@@ -76,7 +79,7 @@ class JarvisService : LifecycleService() {
         device = DeviceController(this)
         speaker = Speaker(this)
         listener = Listener(this)
-        brain = ClaudeBrain(device, speaker)
+        brain = makeBrain()
         wake = WakeWordListener(this) { audio -> lifecycleScope.launch { onWakeWord(audio) } }
 
         ContextCompat.registerReceiver(this, unlockReceiver, IntentFilter(Intent.ACTION_USER_PRESENT), ContextCompat.RECEIVER_EXPORTED)
@@ -134,11 +137,17 @@ class JarvisService : LifecycleService() {
             }
             ACTION_REFRESH -> lifecycleScope.launch {
                 speaker.applySettings()
+                if (brainProvider != JarvisApp.prefs.provider && conversation?.isActive != true) brain = makeBrain()
                 brain.reset()
                 if (conversation?.isActive != true) idle()
             }
         }
         return START_STICKY
+    }
+
+    private fun makeBrain(): Brain {
+        brainProvider = JarvisApp.prefs.provider
+        return if (brainProvider == "claude") ClaudeBrain(device, speaker) else GeminiBrain(device, speaker)
     }
 
     private fun goForeground() {
