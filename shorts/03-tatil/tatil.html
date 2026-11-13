@@ -419,6 +419,7 @@ function sen(x, y, s, o = {}) {
   const hy = -342;
   elips(-98, hy + 4, 18, 24, C.ten); elips(98, hy + 4, 18, 24, C.ten);   // kulaklar
   daire(0, hy, 100, C.ten);
+  if (o.kizar > 0) { g.save(); g.beginPath(); g.arc(0, hy, 97, 0, Math.PI * 2); g.clip(); g.fillStyle = `rgba(255,50,50,${.4 * o.kizar})`; g.fillRect(-110, hy - 40, 220, 150); g.restore(); }
   // saç
   sekil(() => { g.moveTo(-98, hy - 10); g.quadraticCurveTo(-100, hy - 100, -10, hy - 104); g.quadraticCurveTo(90, hy - 108, 100, hy - 14);
     g.quadraticCurveTo(80, hy - 50, 50, hy - 58); g.quadraticCurveTo(40, hy - 40, 20, hy - 52); g.quadraticCurveTo(0, hy - 34, -24, hy - 54);
@@ -450,6 +451,7 @@ function sen(x, y, s, o = {}) {
     if (o.dil !== false) sekil(() => { g.moveTo(-6, my + 8); g.quadraticCurveTo(0, my + 44, 16, my + 8); }, "#FF7A8A", INK, 5); }
   // gözlük
   if (o.gozluk) gozlukCiz(0, hy - 4, .62, 0, o.gozlukRenk || "#9B5DE5");
+  if (o.sapka) sapka(0, hy, 1, o.sapka);
   // ter / gözyaşı
   if (o.ter) for (let i = 0; i < 2; i++) { const f = ((t * 1.4 + i * .5) % 1); g.save(); g.globalAlpha = 1 - f; g.translate(i ? 96 : -100, hy - 40 + f * 70); sekil(() => { g.moveTo(0, -18); g.quadraticCurveTo(14, 4, 0, 10); g.quadraticCurveTo(-14, 4, 0, -18); }, "#7FD3FF", INK, 4); g.restore(); }
   if (o.gozyasi) for (const k of [-1, 1]) { const f = (t * 1.2) % 1; sekil(() => { g.moveTo(k * 36, hy + 18); g.lineTo(k * 36, hy + 18 + f * 60); }, null, "#7FD3FF", 9); }
@@ -631,14 +633,16 @@ function denizBas(x, y, s) { return [x, y - 342 * s]; } // sen() kafa merkezi
 // ---------------------------------------------------------------- KANCA (0 - 3.2)
 function sahneKanca(t) {
   salon(t, { kapi: ara(t, .35, .7) }); hali(0);
-  const kutuGir = E.o(ara(t, .5, 1.1)), kapak = E.o(ara(t, 1.35, 1.75));
-  const kx = lerp(1000, 640, kutuGir);
-  hediyeKutusu(kx, 1590, .95 * (1 + .04 * Math.sin(t * 20) * (t > 1.0 && t < 1.35 ? 1 : 0)), kapak, t);
-  sen(260, 1580, 1.0, { ifade: t > 1.35 ? "mutlu" : t > .6 ? "saskin" : "gulumse", t, kolL: t > 1.35 ? [2.6, .3] : [.3, .2], kolR: t > 1.35 ? [2.6, .3] : [.3, .2], bak: [1, -.2] });
+  const kutuGir = E.o(ara(t, .5, 1.1)), kapak = E.o(ara(t, 1.6, 1.95)), kx = lerp(1000, 640, kutuGir), sallan = t > 1.1 && t < 1.6 ? Math.sin(t * 40) * .04 : 0;
+  const yuksel = E.o(ara(t, 1.85, 2.35)), bk = ara(t, 2.35, 2.8), buyu = bk > 0 ? E.back(bk) : 0;   // (E.back(0) kayan noktada ~1e-16 verir)
+  // bilet önce kutunun içinden yükselir (kutu önde) ...
+  if (yuksel > 0 && bk <= 0) biletCiz(kx, lerp(1480, 1060, yuksel), .42, -.08, t);
+  g.save(); g.translate(kx, 1590); g.rotate(sallan); g.translate(-kx, -1590); hediyeKutusu(kx, 1590, .95, kapak, t); g.restore();
+  sen(260, 1580, 1.0, { ifade: t > 1.6 ? "mutlu" : t > .6 ? "saskin" : "gulumse", t, kolL: t > 1.6 ? [2.6, .3] : [.3, .2], kolR: t > 1.6 ? [2.6, .3] : [.3, .2], bak: [1, -.2] });
   patlamaYazi("DING DONG!", 760, 900, .02, t, C.sari, 90, .08);
-  if (t > 1.4) { parcaciklar(kx, 1300, 1.4, t, 28, C.sari, 900, 2, 700); for (let i = 0; i < 14; i++) { const f = ara(t, 1.4, 2.6); g.save(); g.translate(kx + (rnd(i, 1) - .5) * 900 * f, 1300 - 800 * f + 900 * f * f * rnd(i, 2)); g.rotate(t * 5 + i); g.fillStyle = ["#FF4D5E", "#4D96FF", "#3DDC84", "#FFD23F"][i % 4]; g.fillRect(-10, -5, 20, 10); g.restore(); } }
-  const b = E.back(ara(t, 1.6, 2.1));
-  if (b > 0) biletCiz(lerp(kx, 540, b), lerp(1300, 980, b), lerp(.2, 1.0, b), lerp(-1, -.06, b) + Math.sin(t * 3) * .02, t);
+  if (t > 1.65) { parcaciklar(kx, 1300, 1.65, t, 28, C.sari, 900, 2, 700); for (let i = 0; i < 14; i++) { const f = ara(t, 1.65, 2.8); g.save(); g.translate(kx + (rnd(i, 1) - .5) * 900 * f, 1300 - 800 * f + 900 * f * f * rnd(i, 2)); g.rotate(t * 5 + i); g.fillStyle = ["#FF4D5E", "#4D96FF", "#3DDC84", "#FFD23F"][i % 4]; g.fillRect(-10, -5, 20, 10); g.restore(); } }
+  // ... sonra büyüyüp ekranın ortasına gelir
+  if (buyu > 0) biletCiz(lerp(kx, 540, buyu), lerp(1060, 980, buyu), lerp(.42, 1.0, buyu), lerp(-.08, -.06, buyu) + Math.sin(t * 3) * .02, t);
 }
 // ---------------------------------------------------------------- SEÇİM (3.2 - 8.6)
 const BALON_YER = [[290, 690], [790, 690], [290, 1090], [790, 1090]];
@@ -720,8 +724,7 @@ function sahneTokyo(t) {
   if (!kapsul) {
     tokyoArka(t);
     robot(760, 1590, .9, t);
-    sen(380, 1590, 1.0, { ifade: "mutlu", t, kolL: [2.6, .3], kolR: [2.6, .3], bak: [1, -.3], etiket: true });
-    const [hx, hy] = denizBas(380, 1590, 1.0); sapka(hx, hy, 1.0, "gozluk");
+    sen(380, 1590, 1.0, { ifade: "mutlu", t, kolL: [2.6, .3], kolR: [2.6, .3], bak: [1, -.3], etiket: true, sapka: "gozluk" });
     if (yt > 1.2) patlamaYazi("HARİKA!", 640, 980, t0 + 1.3, t, "#FF4DA6", 100);
   } else {
     kapsulOtel(t, yt);
@@ -760,10 +763,17 @@ function sahneNorvec(t) {
   norvecArka(t, karanlik ? 1 - ara(yt, 3.0, 3.4) : 1);
   if (karanlik) { g.fillStyle = `rgba(0,0,10,${.45 * ara(yt, 3.0, 3.4)})`; g.fillRect(0, 0, W, H); }
   const uyku = yt > 4.2;
-  sen(400, 1600, 1.0, { ifade: uyku ? "susuz" : karanlik ? "saskin" : "mutlu", t, kolL: karanlik ? [.3, .2] : [2.6, .3], kolR: karanlik ? [1.6, .4] : [2.6, .3], bak: karanlik ? [.8, -1] : [0, -1], etiket: yt < KART - .1, dil: false });
-  const [hx, hy] = denizBas(400, 1600, 1.0); sapka(hx, hy, 1.0, "bere");
-  if (karanlik && !uyku) { // fener
-    g.save(); g.globalCompositeOperation = "lighter"; g.fillStyle = "rgba(255,240,180,.18)"; g.beginPath(); g.moveTo(560, 1250); g.lineTo(1100, 700); g.lineTo(1100, 1000); g.closePath(); g.fill(); g.restore(); }
+  const fenerAci = -.55 + Math.sin(t * 1.3) * .18;
+  const el = sen(400, 1600, 1.0, { ifade: uyku ? "susuz" : karanlik ? "saskin" : "mutlu", t, kolL: karanlik ? [.3, .2] : [2.6, .3], kolR: karanlik ? (uyku ? [.4, .3] : [1.9, .15]) : [2.6, .3],
+    bak: karanlik ? [.8, -1] : [0, -1], etiket: yt < KART - .1, dil: false, sapka: "bere" });
+  if (karanlik) { // elde el feneri; uyanıkken ışık tutar
+    const [fx, fy] = el.elR, a = uyku ? 1.3 : fenerAci;
+    if (!uyku) { g.save(); g.globalCompositeOperation = "lighter"; const ux = fx + Math.cos(a) * 70, uy = fy + Math.sin(a) * 70;
+      const isik = g.createLinearGradient(ux, uy, ux + Math.cos(a) * 800, uy + Math.sin(a) * 800); isik.addColorStop(0, "rgba(255,240,180,.45)"); isik.addColorStop(1, "rgba(255,240,180,0)");
+      g.fillStyle = isik; g.beginPath(); g.moveTo(ux + Math.cos(a + 1.57) * 22, uy + Math.sin(a + 1.57) * 22); g.lineTo(ux + Math.cos(a + .3) * 820, uy + Math.sin(a + .3) * 820); g.lineTo(ux + Math.cos(a - .3) * 820, uy + Math.sin(a - .3) * 820); g.lineTo(ux + Math.cos(a - 1.57) * 22, uy + Math.sin(a - 1.57) * 22); g.closePath(); g.fill(); g.restore(); }
+    g.save(); g.translate(fx, fy); g.rotate(a); yuvarlakDik(-14, -14, 64, 28, 8, "#3D5A80", INK, 5); sekil(() => { g.moveTo(50, -18); g.lineTo(78, -24); g.lineTo(78, 24); g.lineTo(50, 18); g.closePath(); }, "#5C677D", INK, 5);
+    if (!uyku) { daire(78, 0, 14, "#FFF6C8", null, 0); } yuvarlakDik(4, -18, 16, 8, 3, "#FFD23F", INK, 3); g.restore();
+    elCiz(fx, fy, a, 1); }
   if (!karanlik && yt > 1.2) patlamaYazi("VAAAY!", 640, 980, t0 + 1.3, t, "#50FFAA", 100);
   if (karanlik) { // gün sayacı
     const gun = Math.min(49, Math.floor(1 + ara(yt, 3.2, 4.8) * 48));
@@ -807,11 +817,8 @@ function sahneDubai(t) {
   const el = sen(DX, DY - hop, 1.0, { ifade: yt > 3.4 ? "susuz" : "mutlu", t, egik: ayak + (yt > 3.2 && !zipla ? Math.sin(t * 4) * .04 : 0), yuru: zipla,
     kolL: zipla ? [2.5 + Math.sin(t * 13) * .3, .3] : yt > 3.4 ? [2.2 + Math.sin(t * 12) * .25, 1.1] : [2.6, .3],
     kolR: yt > 3.0 && yt < 4.45 ? [.9, .9] : zipla ? [2.5 - Math.sin(t * 13) * .3, .3] : [2.6, .3],
-    ter: yt > 3.1, bak: zipla ? [0, .8] : [0, -.4], etiket: yt < KART - .1, dil: yt > 3.4 });
-  const [hx, hy] = denizBas(DX, DY - hop, 1.0);
-  if (yt < 3.4) sapka(hx, hy, 1.0, "gozluk");
-  // kızaran yüz
-  if (sicakk > 0) { g.save(); g.globalAlpha = .38 * sicakk; g.fillStyle = "#FF3B3B"; g.beginPath(); g.ellipse(hx, hy + 20, 80, 60, 0, 0, Math.PI * 2); g.fill(); g.restore(); }
+    ter: yt > 3.1, bak: zipla ? [0, .8] : [0, -.4], etiket: yt < KART - .1, dil: yt > 3.4, sapka: yt < 3.4 ? "gozluk" : null, kizar: sicakk });
+  const egikD = ayak + (yt > 3.2 && !zipla ? Math.sin(t * 4) * .04 : 0), hx = DX + 342 * Math.sin(egikD), hy = DY - hop - 342 * Math.cos(egikD);
   // kafadan buhar + uçuşan ter damlaları
   if (yt > 3.3) for (let i = 0; i < 6; i++) { const f = (t * 1.4 + i / 6) % 1, k2 = i % 2 ? 1 : -1; g.save(); g.globalAlpha = (1 - f) * .75 * sat((yt - 3.3) * 2);
     daire(hx + k2 * (40 + f * 60), hy - 110 - f * 170, 16 + f * 22, "#FFFFFF", "rgba(30,27,46,.3)", 4); g.restore(); }
@@ -948,11 +955,10 @@ function sahneParis(t) {
       const derin = i / (TURISTLER.length - 1), x = lerp(980, 470, derin), y = lerp(1700, 1330, derin), s = lerp(.5, .3, derin);
       g.save(); g.translate(x, y); g.scale(1, k); g.translate(-x, -y); turist(x, y, s, Object.assign({ t }, TURISTLER[i])); g.restore(); }
     if (kuyruk) { const k = E.back(ara(yt, 2.2, 2.5)); g.save(); g.translate(800, 1180); g.scale(k, k); yuvarlakDik(-190, -50, 380, 100, 20, "#FFFFFF", INK, 7); yazi("ASANSÖR: 2 SAAT", 0, 4, { boyut: 42, renk: C.kirmizi, kontur: null, golge: false }); g.restore(); }
-    const el = sen(320, 1640, 1.0, { ifade: kuyruk ? "saskin" : "mutlu", t, kolL: kuyruk ? [.3, .2] : [2.6, .3], kolR: [1.2, 1.4], bak: [1, -.3], etiket: true });
+    const el = sen(320, 1640, 1.0, { ifade: kuyruk ? "saskin" : "mutlu", t, kolL: kuyruk ? [.3, .2] : [2.6, .3], kolR: [1.2, 1.4], bak: [1, -.3], etiket: true, sapka: "fransiz" });
     g.save(); g.translate(el.elR[0] + 10, el.elR[1] - 34); g.rotate(-.2); sekil(() => { g.moveTo(-56, 14); g.quadraticCurveTo(0, -44, 56, 14); g.quadraticCurveTo(0, 2, -56, 14); g.closePath(); }, "#E3A857", INK, 5);
     g.strokeStyle = "rgba(122,74,38,.6)"; g.lineWidth = 4; for (let i = -2; i <= 2; i++) { g.beginPath(); g.moveTo(i * 18, -10 + Math.abs(i) * 6); g.lineTo(i * 14, 8); g.stroke(); } g.restore();
     elCiz(el.elR[0], el.elR[1], -1.2, 1);
-    const [hx, hy] = denizBas(320, 1640, 1.0); sapka(hx, hy, 1.0, "fransiz");
     if (!kuyruk) patlamaYazi("OHLALA!", 640, 980, t0 + 1.3, t, "#E63946", 100);
   } else {
     const ilerle = E.io(ara(yt, 3.0, 5.2)), adimSayisi = ilerle * 674, vardi = yt > 5.2;
@@ -960,23 +966,27 @@ function sahneParis(t) {
       merdiven(t, ilerle, adimSayisi);
       const yorgun = ilerle > .45, adimFaz = (adimSayisi % 1);
       const zip = Math.sin(adimFaz * Math.PI) * 14;
-      sen(540 + 20, 1470 - zip, .95, { ifade: yorgun ? "susuz" : "kararli", t, yuru: true, egik: .08, kolL: [.4, .5], kolR: [2.1, .3], ter: yorgun, bak: [1, -.6], etiket: yt < KART - .1, dil: yorgun });
-      const [hx, hy] = denizBas(560, 1470 - zip, .95); sapka(hx + 5, hy, .95, "fransiz");
+      sen(540 + 20, 1470 - zip, .95, { ifade: yorgun ? "susuz" : "kararli", t, yuru: true, egik: .08, kolL: [.4, .5], kolR: [2.1, .3], ter: yorgun, bak: [1, -.6], etiket: yt < KART - .1, dil: yorgun, sapka: "fransiz" });
       const k = 1 - ara(yt, 5.1, 5.35);
       if (k > 0) { g.save(); g.globalAlpha = k; g.translate(540, 760); yuvarlakDik(-230, -70, 460, 140, 70, "#FFFFFF", INK, 8); yazi(`${Math.floor(adimSayisi)} / 674`, 0, 6, { boyut: 80, renk: adimSayisi > 600 ? C.kirmizi : INK, kontur: null, golge: false }); yazi("BASAMAK", 0, -100, { boyut: 44, renk: "#fff", klw: 10 }); g.restore(); }
     } else {
       // 2. kata vardı: platform + manzara, Deniz yere yığılır
       merdiven(t, 1, 674);
       g.fillStyle = "rgba(255,255,255,.35)"; g.fillRect(0, 0, W, H);
-      yuvarlakDik(-40, 1420, W + 80, 120, 0, "#8B5E3C"); sekil(() => { g.moveTo(-40, 1420); g.lineTo(W + 40, 1420); }, null, INK, 8);
-      for (let i = 0; i < 12; i++) sekil(() => { g.moveTo(i * 100, 1420); g.lineTo(i * 100, 1300); }, null, "#5A3A21", 8);
-      sekil(() => { g.moveTo(-40, 1300); g.lineTo(W + 40, 1300); }, null, INK, 14); sekil(() => { g.moveTo(-40, 1300); g.lineTo(W + 40, 1300); }, null, "#8B5E3C", 7);
-      // dimdik ayakta, bir eliyle korkuluğa yaslanıp soluklanır (büzüşme yok)
-      const nefes = Math.sin(t * 7) * 5;
-      sen(520, 1430 - Math.abs(nefes), 1.0, { ifade: "susuz", t, egik: .07, kolL: [.08, .05], kolR: [1.15, .25], ter: true, etiket: false, dil: true, bak: [0, .4] });
-      { const c = Math.cos(.07), sn = Math.sin(.07), vy = -342; sapka(520 - vy * sn, 1430 - Math.abs(nefes) + vy * c, 1.0, "fransiz"); }
-      for (let i = 0; i < 3; i++) { const f = (t * 1.6 + i / 3) % 1; g.save(); g.globalAlpha = 1 - f; daire(680 + f * 80, 1130 - f * 30 + i * 20, 12 + f * 14, "#FFFFFF", "rgba(30,27,46,.3)", 3); g.restore(); }
-      yuvarlakDik(760, 1120, 240, 100, 16, "#FFFFFF", INK, 7); yazi("2. KAT", 880, 1170, { boyut: 60, renk: "#4D96FF", kontur: null, golge: false });
+      // platform zemini (üstten görünen ahşap döşeme)
+      sekil(() => { g.moveTo(-60, 1380); g.lineTo(W + 60, 1380); g.lineTo(W + 60, 1570); g.lineTo(-60, 1570); g.closePath(); }, "#B98252", INK, 8);
+      g.strokeStyle = "rgba(60,30,10,.3)"; g.lineWidth = 4; for (let i = 1; i < 5; i++) { const y = 1380 + i * 38; g.beginPath(); g.moveTo(-60, y); g.lineTo(W + 60, y); g.stroke(); }
+      yuvarlakDik(-60, 1570, W + 120, 80, 0, "#6E4A2E", INK, 8);
+      // Deniz platformda ayakta, bir eli korkulukta, soluklanıyor
+      const nefes = Math.abs(Math.sin(t * 7)) * 6;
+      sen(520, 1500 - nefes, 1.0, { ifade: "susuz", t, kolL: [.1, .05], kolR: [1.25, .2], ter: true, etiket: false, dil: true, bak: [0, .3], sapka: "fransiz" });
+      // ön korkuluk (bacaklarının önünde)
+      for (let i = 0; i < 12; i++) { const x = i * 100 - 10; sekil(() => { g.moveTo(x, 1572); g.lineTo(x, 1290); }, null, INK, 14); sekil(() => { g.moveTo(x, 1572); g.lineTo(x, 1290); }, null, "#8B5E3C", 7); }
+      sekil(() => { g.moveTo(-60, 1290); g.lineTo(W + 60, 1290); }, null, INK, 22); sekil(() => { g.moveTo(-60, 1290); g.lineTo(W + 60, 1290); }, null, "#A9744A", 12);
+      sekil(() => { g.moveTo(-60, 1440); g.lineTo(W + 60, 1440); }, null, INK, 12); sekil(() => { g.moveTo(-60, 1440); g.lineTo(W + 60, 1440); }, null, "#8B5E3C", 6);
+      elCiz(716, 1278, -.2, 1);   // korkuluğu tutan el (korkuluğun üstünde)
+      for (let i = 0; i < 3; i++) { const f = (t * 1.6 + i / 3) % 1; g.save(); g.globalAlpha = 1 - f; daire(640 + f * 80, 1180 - f * 30 + i * 20, 12 + f * 14, "#FFFFFF", "rgba(30,27,46,.3)", 3); g.restore(); }
+      yuvarlakDik(780, 1060, 240, 100, 16, "#FFFFFF", INK, 7); yazi("2. KAT", 900, 1110, { boyut: 60, renk: "#4D96FF", kontur: null, golge: false });
     }
     if (yt > 5.2) patlamaYazi("BİTTİM!", 540, 930, t0 + 5.25, t, C.kirmizi, 100);
   }
@@ -1037,7 +1047,7 @@ function ciz(t) {
   t = ((t % SURE) + SURE) % SURE;
   g.save();
   let sars = 0;
-  for (const [t0, guc] of [[1.38, 12], [8.95, 10], [12.9, 10], [18.15, 10], [27.35, 10], [36.55, 10], [46.5, 8]]) if (t > t0 && t < t0 + .4) sars = Math.max(sars, guc * (1 - (t - t0) / .4));
+  for (const [t0, guc] of [[1.62, 12], [8.95, 10], [12.9, 10], [18.15, 10], [27.35, 10], [36.55, 10], [46.5, 8]]) if (t > t0 && t < t0 + .4) sars = Math.max(sars, guc * (1 - (t - t0) / .4));
   g.translate(Math.sin(t * 90) * sars, Math.cos(t * 77) * sars);
   for (const [a, b, f] of SAHNE) if (t >= a && t < b) { f(t); break; }
   g.restore();
@@ -1051,7 +1061,7 @@ function ciz(t) {
 window.ciz = ciz;
 // ---------------------------------------------------------------- SES OLAYLARI
 const OLAYLAR = [
-  { t: .02, tur: "zil" }, { t: .4, tur: "kapi" }, { t: .55, tur: "whoosh" }, { t: 1.0, tur: "gum" }, { t: 1.38, tur: "pop", n: 3 }, { t: 1.4, tur: "konfeti" }, { t: 1.65, tur: "parilti" }, { t: 1.8, tur: "basari" },
+  { t: .02, tur: "zil" }, { t: .4, tur: "kapi" }, { t: .55, tur: "whoosh" }, { t: 1.0, tur: "gum" }, { t: 1.62, tur: "pop", n: 3 }, { t: 1.65, tur: "konfeti" }, { t: 1.9, tur: "parilti" }, { t: 2.4, tur: "basari" },
   { t: 3.25, tur: "whoosh" }, ...[0, 1, 2, 3].map(i => ({ t: 3.6 + i * .22, tur: "pop", n: i })),
   { t: 6.4, tur: "tik", n: 0 }, { t: 7.0, tur: "tik", n: 1 }, { t: 7.6, tur: "tik", n: 2 }, { t: 8.2, tur: "zoom" },
   ...[[8.6, 5.4], [17.8, 5.4], [27.0, 6.4], [36.2, 5.4]].flatMap(([s, k]) => [{ t: s, tur: "bant" }, { t: s + .35, tur: "damgaVur" }, { t: s + 1.3, tur: "basari" }, { t: s + 3.0, tur: "whoosh" }, { t: s + k, tur: "damga" }, { t: s + k + .8, tur: "bar" }]),
