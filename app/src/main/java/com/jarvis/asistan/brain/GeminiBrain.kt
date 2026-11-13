@@ -289,11 +289,11 @@ class GeminiBrain(private val device: DeviceController, private val speaker: Spe
         val excluded = listOf("embedding", "tts", "image", "imagen", "live", "audio", "computer", "robotics", "aqa",
             "vision", "learnlm", "veo", "lyria", "native", "research", "nano", "banana", "gemma", "exp", "thinking", "customtools")
         val usable = names.filter { n -> n.startsWith("gemini") && excluded.none { n.contains(it) } }
+        // Hızlı/verimli modeller (flash ve "Gemini 4 Hydrogen" gibi yeni isimli modeller) önce, en yeni sürüm başta.
         fun tier(n: String) = when {
-            n.contains("flash-lite") -> 1
-            n.contains("flash") -> 0
-            n.contains("pro") -> 2
-            else -> 3
+            n.contains("flash-lite") || n.contains("lite") -> 1
+            n.contains("pro") || n.contains("ultra") -> 2
+            else -> 0
         }
         val ranked = usable.filter { version(it) > 0 }
             .sortedWith(compareBy<String>({ tier(it) }, { -version(it) }, { if (it.contains("preview")) 1 else 0 }))
