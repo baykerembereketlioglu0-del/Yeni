@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Karala</string>
+    <string name="tile_label">Ekran kalemi</string>
+    <string name="shortcut_pen_short">Ekran kalemi</string>
+    <string name="shortcut_pen_long">Ekran kalemini başlat</string>
+    <string name="shortcut_focus_short">Odaklan</string>
+    <string name="shortcut_focus_long">Pomodoro başlat</string>
+</resources>

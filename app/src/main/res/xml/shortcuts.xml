@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut android:shortcutId="pen" android:enabled="true" android:icon="@drawable/ic_stat_pen"
+        android:shortcutShortLabel="@string/shortcut_pen_short" android:shortcutLongLabel="@string/shortcut_pen_long">
+        <intent android:action="android.intent.action.VIEW" android:targetPackage="app.karala" android:targetClass="app.karala.MainActivity">
+            <extra android:name="route" android:value="pen" />
+        </intent>
+    </shortcut>
+    <shortcut android:shortcutId="focus" android:enabled="true" android:icon="@drawable/ic_stat_pen"
+        android:shortcutShortLabel="@string/shortcut_focus_short" android:shortcutLongLabel="@string/shortcut_focus_long">
+        <intent android:action="android.intent.action.VIEW" android:targetPackage="app.karala" android:targetClass="app.karala.MainActivity">
+            <extra android:name="route" android:value="focus" />
+        </intent>
+    </shortcut>
+</shortcuts>
