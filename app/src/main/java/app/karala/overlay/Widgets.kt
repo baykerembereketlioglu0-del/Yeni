@@ -70,7 +70,7 @@ abstract class OverlayWidget(protected val ctx: Context, title: String, private 
     protected open fun onHidden() {}
 
     protected fun big(text: String, sp: Float = 30f) = Ui.label(ctx, text, sp, Ui.TEXT, bold = true).apply {
-        typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD); gravity = Gravity.CENTER
+        fontFeatureSettings = "tnum"; gravity = Gravity.CENTER // eşit genişlikli rakamlar: süre akarken titremez
     }
 
     companion object {
@@ -264,7 +264,7 @@ class CounterWidget(ctx: Context, private val repo: Repo, onClosed: (OverlayWidg
         val colors = intArrayOf(Ui.GOOD, Ui.BAD, Ui.DIM)
         for (i in 0..2) {
             val b = TextView(ctx).apply {
-                gravity = Gravity.CENTER; setTextColor(Ui.ON_ACCENT); typeface = Typeface.DEFAULT_BOLD
+                gravity = Gravity.CENTER; setTextColor(Ui.ON_ACCENT); typeface = Ui.font(ctx, true)
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
                 background = Ui.bg(colors[i], Ui.dp(ctx, 12).toFloat())
                 layoutParams = LinearLayout.LayoutParams(Ui.dp(ctx, 62), Ui.dp(ctx, 54)).apply { marginEnd = if (i < 2) Ui.dp(ctx, 6) else 0 }

@@ -13,7 +13,16 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
@@ -57,16 +66,6 @@ class MainActivity : ComponentActivity() {
 
         fun overlayPermissionIntent(ctx: Context) =
             Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${ctx.packageName}"))
-
-        /** Ekran kalemini başlatır; "üstte gösterme" izni yoksa izin ekranını açar. @return başlatıldıysa true */
-        fun startPen(ctx: Context): Boolean {
-            if (!Settings.canDrawOverlays(ctx)) {
-                runCatching { ctx.startActivity(overlayPermissionIntent(ctx).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
-                return false
-            }
-            OverlayService.start(ctx)
-            return true
-        }
     }
 }
 
@@ -74,7 +73,7 @@ private data class Tab(val route: String, val label: String, val icon: ImageVect
 
 private val TABS = listOf(
     Tab("home", "Bugün", Icons.Rounded.Home),
-    Tab("notes", "Defterler", Icons.Rounded.MenuBook),
+    Tab("notes", "Defter", Icons.Rounded.MenuBook),
     Tab("review", "Tekrar", Icons.Rounded.Replay),
     Tab("plan", "Plan", Icons.Rounded.EventNote),
     Tab("tools", "Araçlar", Icons.Rounded.Apps),
@@ -89,6 +88,7 @@ private fun NavHostController.tab(route: String) = navigate(route) {
 private fun KaralaApp(pendingRoute: String?, consumeRoute: () -> Unit, onTheme: (Int) -> Unit) {
     val nav = rememberNavController()
     val ctx = androidx.compose.ui.platform.LocalContext.current
+    val pen = rememberPenLauncher()
     val entry by nav.currentBackStackEntryAsState()
     val current = entry?.destination?.route
 
@@ -105,7 +105,7 @@ private fun KaralaApp(pendingRoute: String?, consumeRoute: () -> Unit, onTheme: 
     LaunchedEffect(pendingRoute) {
         when (pendingRoute) {
             null -> return@LaunchedEffect
-            "pen" -> MainActivity.startPen(ctx)
+            "pen" -> pen.launch()
             "focus" -> nav.navigate("focus") { launchSingleTop = true }
             "plan" -> nav.tab("plan")
         }
@@ -113,22 +113,17 @@ private fun KaralaApp(pendingRoute: String?, consumeRoute: () -> Unit, onTheme: 
     }
 
     Scaffold(
-        bottomBar = {
-            if (TABS.any { it.route == current }) NavigationBar {
-                TABS.forEach { t ->
-                    NavigationBarItem(current == t.route, { nav.tab(t.route) }, { Icon(t.icon, null) }, label = { Text(t.label, maxLines = 1) })
-                }
-            }
-        },
+        bottomBar = { if (TABS.any { it.route == current }) BottomBar(current) { nav.tab(it) } },
+        containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0),
     ) { pad ->
         NavHost(nav, "home", Modifier.padding(pad)) {
-            composable("home") { HomeScreen(nav) }
+            composable("home") { HomeScreen(nav, pen) }
             composable("notes") { NotesScreen(nav) }
             composable("review") { ReviewScreen(nav) }
             composable("plan") { PlanScreen() }
             composable("tools") { ToolsScreen(nav) }
-            composable("settings") { SettingsScreen({ nav.popBackStack() }, onTheme) }
+            composable("settings") { SettingsScreen({ nav.popBackStack() }, onTheme, pen) }
             composable("note/{id}", listOf(navArgument("id") { type = NavType.LongType })) {
                 NoteEditorScreen(it.arguments!!.getLong("id")) { nav.popBackStack() }
             }
@@ -149,6 +144,39 @@ private fun KaralaApp(pendingRoute: String?, consumeRoute: () -> Unit, onTheme: 
             composable("convert") { ConverterScreen { nav.popBackStack() } }
             composable("stats") { StatsScreen { nav.popBackStack() } }
             composable("exams") { ExamsScreen { nav.popBackStack() } }
+        }
+    }
+    PenLauncherHost(pen)
+}
+
+/** Yüzen, hap biçimli alt menü: seçili sekme marka rengiyle genişler ve adını gösterir. */
+@Composable
+private fun BottomBar(current: String?, onSelect: (String) -> Unit) {
+    val shape = androidx.compose.foundation.shape.RoundedCornerShape(30.dp)
+    androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 14.dp).padding(bottom = 10.dp, top = 6.dp)) {
+        androidx.compose.foundation.layout.Row(
+            Modifier.fillMaxWidth().clip(shape).background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape).padding(6.dp),
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+        ) {
+            TABS.forEach { t ->
+                val selected = current == t.route
+                val weight by androidx.compose.animation.core.animateFloatAsState(if (selected) 2.1f else 1f, label = "tab")
+                val k = K
+                androidx.compose.foundation.layout.Row(
+                    Modifier.weight(weight).height(48.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(24.dp))
+                        .then(if (selected) Modifier.background(k.brand) else Modifier)
+                        .selectable(selected, role = androidx.compose.ui.semantics.Role.Tab) { onSelect(t.route) },
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
+                ) {
+                    Icon(t.icon, if (selected) null else t.label, tint = if (selected) k.onBrand else MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (selected) {
+                        androidx.compose.foundation.layout.Spacer(Modifier.width(6.dp))
+                        Text(t.label, style = MaterialTheme.typography.labelLarge, color = k.onBrand, maxLines = 1, softWrap = false)
+                    }
+                }
+            }
         }
     }
 }

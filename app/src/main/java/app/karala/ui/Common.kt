@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -70,22 +71,79 @@ fun Screen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold) },
+                title = {
+                    // Ana sekmelerde iri başlık, alt sayfalarda sakin başlık.
+                    Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        style = if (onBack == null) MaterialTheme.typography.headlineMedium else MaterialTheme.typography.titleLarge)
+                },
                 navigationIcon = { if (onBack != null) IconButton(onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Geri") } },
                 actions = actions,
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background,
+                    scrolledContainerColor = MaterialTheme.colorScheme.background),
             )
         },
         floatingActionButton = fab,
+        containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top),
         content = content,
     )
 }
 
+/** Hap biçimli sekme seçici. */
+@Composable
+fun KTabs(titles: List<String>, selected: Int, modifier: Modifier = Modifier, onSelect: (Int) -> Unit) {
+    val shape = RoundedCornerShape(18.dp)
+    Row(modifier.fillMaxWidth().clip(shape).background(MaterialTheme.colorScheme.surfaceContainerHigh).padding(4.dp)) {
+        titles.forEachIndexed { i, t ->
+            val on = i == selected
+            Box(Modifier.weight(1f).height(40.dp).clip(RoundedCornerShape(14.dp))
+                .background(if (on) MaterialTheme.colorScheme.surfaceContainerLowest else Color.Transparent)
+                .selectable(on, role = androidx.compose.ui.semantics.Role.Tab) { onSelect(i) }, contentAlignment = Alignment.Center) {
+                Text(t, style = MaterialTheme.typography.labelLarge, maxLines = 1,
+                    color = if (on) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+}
+
+/** Uygulamanın standart kartı: yumuşak köşe, ince kenarlık. */
+@Composable
+fun KCard(modifier: Modifier = Modifier, color: Color = MaterialTheme.colorScheme.surfaceContainer, content: @Composable () -> Unit) {
+    Surface(modifier, shape = MaterialTheme.shapes.medium, color = color,
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = if (K.dark) 0.7f else 1f)),
+        content = content)
+}
+
+/** Yuvarlak, renkli zeminli ikon rozeti. */
+@Composable
+fun IconBubble(icon: androidx.compose.ui.graphics.vector.ImageVector, tint: Color, size: Int = 42) {
+    Box(Modifier.size(size.dp).clip(RoundedCornerShape((size * 0.34f).dp)).background(tint.copy(alpha = if (K.dark) 0.16f else 0.14f)),
+        contentAlignment = Alignment.Center) { Icon(icon, null, tint = tint, modifier = Modifier.size((size * 0.55f).dp)) }
+}
+
+/** Ortasında değer yazan ilerleme halkası. */
+@Composable
+fun Ring(progress: Float, color: Color, modifier: Modifier = Modifier, stroke: Int = 9, content: @Composable () -> Unit) {
+    val track = MaterialTheme.colorScheme.surfaceContainerHighest
+    val anim by androidx.compose.animation.core.animateFloatAsState(progress.coerceIn(0f, 1f),
+        androidx.compose.animation.core.tween(900), label = "ring")
+    Box(modifier, contentAlignment = Alignment.Center) {
+        androidx.compose.foundation.Canvas(Modifier.matchParentSize()) {
+            val w = stroke.dp.toPx()
+            val inset = androidx.compose.ui.geometry.Offset(w / 2, w / 2)
+            val sz = androidx.compose.ui.geometry.Size(size.width - w, size.height - w)
+            drawArc(track, 0f, 360f, false, inset, sz, style = androidx.compose.ui.graphics.drawscope.Stroke(w))
+            if (anim > 0f) drawArc(color, -90f, 360f * anim, false, inset, sz,
+                style = androidx.compose.ui.graphics.drawscope.Stroke(w, cap = androidx.compose.ui.graphics.StrokeCap.Round))
+        }
+        content()
+    }
+}
+
 @Composable
 fun SectionTitle(text: String, modifier: Modifier = Modifier, trailing: @Composable () -> Unit = {}) {
-    Row(modifier.fillMaxWidth().padding(top = 18.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(text, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+    Row(modifier.fillMaxWidth().padding(top = 22.dp, bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(text, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
         trailing()
     }
 }
@@ -182,9 +240,9 @@ fun PageThumb(pageId: Long?, version: Long, modifier: Modifier = Modifier, conte
 
 @Composable
 fun StatTile(value: String, label: String, modifier: Modifier = Modifier, accent: Color = MaterialTheme.colorScheme.primary) {
-    Surface(modifier, shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.surfaceContainer) {
+    KCard(modifier) {
         Column(Modifier.padding(14.dp)) {
-            Text(value, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = accent, maxLines = 1)
+            Text(value, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.ExtraBold, color = accent, maxLines = 1)
             Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }

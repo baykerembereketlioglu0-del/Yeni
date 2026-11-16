@@ -50,7 +50,7 @@ fun FormulasScreen(onBack: () -> Unit) {
                         item(key = "${c.name}/${t.name}") { SectionTitle(if (q.isEmpty()) t.name else "${c.name} · ${t.name}") }
                         items(list.size, key = { "${c.name}/${t.name}/$it/${list[it].title}" }) { i ->
                             val f = list[i]
-                            Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.surfaceContainer,
+                            KCard(
                                 modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
                                 Column(Modifier.padding(14.dp)) {
                                     Text(f.title, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
@@ -98,7 +98,7 @@ fun PeriodicScreen(onBack: () -> Unit) {
             Column(Modifier.padding(16.dp)) {
                 val e = selected
                 if (e == null) Text("Ayrıntı için bir elemente dokun.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                else Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.surfaceContainer, modifier = Modifier.fillMaxWidth()) {
+                else KCard(modifier = Modifier.fillMaxWidth()) {
                     Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                         Box(Modifier.size(72.dp).clip(RoundedCornerShape(14.dp)).background(Color(e.category.color)), contentAlignment = Alignment.Center) {
                             Text(e.symbol, fontSize = 32.sp, fontWeight = FontWeight.Black, color = Color(0xFF1B1E26))

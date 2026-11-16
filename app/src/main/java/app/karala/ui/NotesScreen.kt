@@ -53,7 +53,7 @@ fun NotesScreen(nav: NavController) {
             }
             items(shown, key = { it.id }) { n ->
                 val s = subjects.byId(n.subjectId)
-                Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.surfaceContainer,
+                KCard(
                     modifier = Modifier.clip(MaterialTheme.shapes.medium)
                         .combinedClickable(onClick = { nav.navigate("note/${n.id}") }, onLongClick = { menuFor = n })) {
                     Column {

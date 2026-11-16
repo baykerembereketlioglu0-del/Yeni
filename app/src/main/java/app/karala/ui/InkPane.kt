@@ -176,6 +176,14 @@ fun InkPane(
             Row(Modifier.fillMaxWidth().navigationBarsPadding().horizontalScroll(rememberScrollState()).padding(horizontal = 6.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically) {
                 historyTick
+                settingsTick
+                KIconButton(if (p.stylusOnly) Icon.STYLUS else Icon.HAND,
+                    if (p.stylusOnly) "Kalem modu: yalnızca kalem ucu çizer" else "El modu: parmakla çizilir", active = p.stylusOnly) {
+                    p.stylusOnly = !p.stylusOnly; settingsTick++
+                    android.widget.Toast.makeText(ctx, if (p.stylusOnly) "Kalem modu: yalnızca kalem ucu çizer" else "El modu: parmağınla çizebilirsin",
+                        android.widget.Toast.LENGTH_SHORT).show()
+                }
+                VerticalDivider(Modifier.height(24.dp).padding(horizontal = 4.dp))
                 KIconButton(Icon.PEN, "Kalem", tool == ToolType.PEN) { select(ToolType.PEN) }
                 KIconButton(Icon.HIGHLIGHTER, "Fosforlu kalem", tool == ToolType.HIGHLIGHTER) { select(ToolType.HIGHLIGHTER) }
                 KIconButton(Icon.ERASER, "Silgi", tool == ToolType.ERASER) { select(ToolType.ERASER) }

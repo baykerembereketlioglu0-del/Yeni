@@ -52,10 +52,7 @@ fun ReviewScreen(nav: NavController) {
     var tab by remember { mutableIntStateOf(0) }
     Screen("Tekrar") { pad ->
         Column(Modifier.padding(pad).fillMaxSize()) {
-            TabRow(tab, containerColor = MaterialTheme.colorScheme.background) {
-                Tab(tab == 0, { tab = 0 }, text = { Text("Hatalı sorular") })
-                Tab(tab == 1, { tab = 1 }, text = { Text("Bilgi kartları") })
-            }
+            KTabs(listOf("Hatalı sorular", "Bilgi kartları"), tab, Modifier.padding(horizontal = 16.dp).padding(bottom = 4.dp)) { tab = it }
             if (tab == 0) MistakesTab(nav) else DecksTab(nav)
         }
     }
@@ -107,7 +104,7 @@ private fun MistakesTab(nav: NavController) {
             }
             items(shown, key = { it.id }) { m ->
                 val s = subjects.byId(m.subjectId)
-                Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.surfaceContainer,
+                KCard(
                     modifier = Modifier.clip(MaterialTheme.shapes.medium).clickable { nav.navigate("mistake/${m.id}") }) {
                     Column {
                         PageThumb(m.pageId, m.dueAt + m.reps, Modifier.fillMaxWidth().aspectRatio(1.35f).padding(6.dp))
@@ -303,7 +300,7 @@ private fun DecksTab(nav: NavController) {
             }
             items(decks, key = { it.id }) { d ->
                 val s = subjects.byId(d.subjectId)
-                Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.surfaceContainer,
+                KCard(
                     modifier = Modifier.fillMaxWidth().clip(MaterialTheme.shapes.medium).clickable { nav.navigate("deck/${d.id}") }) {
                     Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
@@ -371,7 +368,7 @@ fun DeckScreen(deckId: Long, nav: NavController) {
             }
             if (cards.isEmpty()) item { Empty("Bu destede kart yok", "Ön yüze soruyu, arka yüze cevabı yaz.") }
             items(cards, key = { it.id }) { c ->
-                Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.surfaceContainer,
+                KCard(
                     modifier = Modifier.fillMaxWidth().clip(MaterialTheme.shapes.medium).clickable { editing = c }) {
                     Column(Modifier.padding(14.dp)) {
                         Text(c.front, fontWeight = FontWeight.Medium, maxLines = 2, overflow = TextOverflow.Ellipsis)

@@ -35,6 +35,7 @@ internal class Toolbar(private val svc: OverlayService) {
     private val extra = FrameLayout(ctx)
 
     private val modeBtn = Ui.iconBtn(ctx, Icon.POINTER, desc = "Dokunma modu: alttaki uygulamayı kullan")
+    private val inputBtn = Ui.iconBtn(ctx, Icon.HAND, desc = "Çizim girişi: el / kalem")
     private val toolBtns = LinkedHashMap<ToolType, ImageView>()
     private val shapeBtn = Ui.iconBtn(ctx, Icon.SHAPES, desc = "Şekiller")
     private val undoBtn = Ui.iconBtn(ctx, Icon.UNDO, desc = "Geri al")
@@ -99,6 +100,9 @@ internal class Toolbar(private val svc: OverlayService) {
         val narrow = screenW < Ui.dp(ctx, 840)
         val row1 = row
         if (narrow) { row1.removeViewAt(row1.childCount - 1); row = Ui.row(ctx) } // sondaki ayırıcıyı at, ikinci satıra geç
+        inputBtn.setOnClickListener { svc.setInputMode(!svc.prefs.stylusOnly, announce = true) }
+        inputBtn.setOnLongClickListener { svc.showModeChooser(); true }
+        row.addView(inputBtn); row.addView(Ui.sep(ctx))
         prevBtn.setOnClickListener { svc.goToPage(svc.pageIndex - 1) }
         nextBtn.setOnClickListener { svc.goToPage(svc.pageIndex + 1) }
         pageLabel.gravity = Gravity.CENTER
@@ -172,6 +176,9 @@ internal class Toolbar(private val svc: OverlayService) {
     /** Düğmelerin seçili/etkin görünümünü servis durumuna göre günceller. */
     fun refresh() {
         Ui.setActive(modeBtn, svc.passThrough, Ui.GOOD)
+        Ui.setIcon(inputBtn, if (svc.prefs.stylusOnly) Icon.STYLUS else Icon.HAND)
+        Ui.setActive(inputBtn, svc.prefs.stylusOnly, Ui.GOOD)
+        inputBtn.contentDescription = if (svc.prefs.stylusOnly) "Kalem modu açık: yalnızca kalem ucu çizer" else "El modu açık: parmakla çizilir"
         for ((t, b) in toolBtns) Ui.setActive(b, !svc.passThrough && svc.tool == t)
         val shape = svc.prefs.lastShape
         Ui.setIcon(shapeBtn, shapeIcon(shape))
@@ -315,8 +322,7 @@ internal class Toolbar(private val svc: OverlayService) {
         r.addView(Ui.pill(ctx, "✔ Soru sayacı") { svc.toggleWidget(OverlayService.W_COUNTER) })
         col.addView(hscroll(r))
         val r2 = Ui.row(ctx)
-        val stylus = Ui.pill(ctx, "Yalnızca kalem ucu") { svc.prefs.stylusOnly = !svc.prefs.stylusOnly; svc.applyTool(); open(Panel.MORE) }
-        Ui.setPillActive(stylus, svc.prefs.stylusOnly, Ui.GOOD)
+        val stylus = Ui.pill(ctx, if (svc.prefs.stylusOnly) "Giriş: Kalem" else "Giriş: El") { svc.showModeChooser() }
         val assist = Ui.pill(ctx, "Basılı tut → şekil") { svc.prefs.shapeAssist = !svc.prefs.shapeAssist; svc.applyTool(); open(Panel.MORE) }
         Ui.setPillActive(assist, svc.prefs.shapeAssist, Ui.GOOD)
         r2.addView(stylus); r2.addView(assist)

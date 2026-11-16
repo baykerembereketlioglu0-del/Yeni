@@ -7,8 +7,27 @@ unutmadan önce sana yeniden sorulur.
 
 Reklam yok, hesap yok, abonelik yok. Her şey cihazda saklanır.
 
-**Kurulum:** [`dist/karala-1.0.0.apk`](dist/karala-1.0.0.apk) dosyasını tablete/telefona indirip aç (Android 8.0+).
+**Kurulum:** [`dist/karala-1.1.0.apk`](dist/karala-1.1.0.apk) dosyasını tablete/telefona indirip aç (Android 8.0+).
 İlk açılışta "diğer uygulamaların üzerinde göster" iznini ver.
+
+> **Anahtar gri ve "Kısıtlı ayar tarafından kontrol ediliyor" mu yazıyor?** Mağaza dışından kurulan uygulamalarda
+> Android bunu bir kez sorar: Ayarlar → Uygulamalar → Karala → sağ üstteki **⋮** → **Kısıtlı ayarlara izin ver**.
+> Sonra izin anahtarı açılabilir. Uygulamadaki "İzin ver" düğmesi bu adımları gösteren bir rehber açar.
+
+## El mi, kalem mi?
+
+Ekran kalemi her başladığında nasıl çizeceğini sorar:
+
+| Seçim | Davranış |
+|---|---|
+| **El** | Parmağınla çizersin; kalem ucu da çalışır. |
+| **Kalem** | Yalnızca kalem ucu çizer. Elin ya da avuç içi ekrana değse de iz bırakmaz. |
+
+"Seçimimi hatırla" ile bir daha sorulmaz; araç çubuğundaki el / kalem düğmesiyle istediğin an değiştirirsin
+(uzun basınca seçim penceresi yeniden açılır). Kalem modundayken parmakla çizmeye çalışırsan kısa bir hatırlatma
+görünür. Aynı seçim defter düzenleyicide ve Ayarlar'da da var.
+
+![El mi, kalem mi?](docs/ekranlar/el-mi-kalem-mi.png)
 
 ![Araç çubuğu](docs/ekranlar/arac-cubugu.png)
 
@@ -27,7 +46,7 @@ Reklam yok, hesap yok, abonelik yok. Her şey cihazda saklanır.
 | Sayfalar | Her soru için ayrı sayfa; sayfalar oturumlar arasında saklanır |
 | Tahta | Beyaz tahta, kara tahta, kareli, çizgili, noktalı zemin; opaklık ayarı |
 | Kaydet | Seçtiğin dersin o günkü defterine ya da hatalı sorulara; istersen ekran görüntüsüyle |
-| Kalem ucu desteği | Basınca duyarlı çizgi, kalemdeki silgi/düğme ile silme, "yalnızca kalem ucu" (avuç içi reddi) |
+| Kalem ucu desteği | Basınca duyarlı çizgi, kalemdeki silgi/düğme ile silme, el / kalem girişi (avuç içi reddi) |
 | Yüzen araçlar | Kronometre (soru başı süre), Pomodoro, bilimsel hesap makinesi, doğru/yanlış/boş soru sayacı |
 | Hızlı erişim | Baloncuğa küçültme, bildirimden gizle/göster, hızlı ayarlar kutucuğu, uygulama kısayolu |
 
@@ -66,13 +85,15 @@ Reklam yok, hesap yok, abonelik yok. Her şey cihazda saklanır.
   üretici arayüzleri (MIUI/HyperOS, One UI) ve ekran görüntüsü izni akışı cihazda denenmelidir.
 - Dokunma modunda Android 12+ güvenlik kuralı gereği katman en fazla ~%80 opak olabilir; çizimler hafif soluk görünür.
 - DRM korumalı videolar (Netflix vb.) ve "güvenli" pencereler ekran görüntüsünde siyah çıkar; çizim yine kaydedilir.
+- Kalem modunda parmak dokunuşları yok sayılır ama alttaki uygulamaya da geçmez (Android, katman pencerelerinde
+  dokunuşu parmağa/kaleme göre ayırıp alta iletmeye izin vermiyor); videoyu oynatmak için dokunma moduna geç.
 - Katmanda metin kutusu aracı yok (klavye odağı katmanla çakışıyor).
 - Arayüz yalnızca Türkçe.
 
 ## Geliştirme
 
 ```bash
-./gradlew :app:testDebugUnitTest   # 34 test; ekran görüntüleri app/build/shots altına yazılır
+./gradlew :app:testDebugUnitTest   # 40 test; ekran görüntüleri app/build/shots altına yazılır
 ./gradlew :app:assembleRelease     # app/build/outputs/apk/release/app-release.apk
 ```
 
@@ -85,6 +106,9 @@ Kotlin, Jetpack Compose (uygulama), klasik View (katman), Room. Paketler:
 | `study` | Aralıklı tekrar (SM-2), ifade çözümleyici, Pomodoro, hatırlatmalar, birimler, formül/element verisi |
 | `data` | Room varlıkları ve sorgular, sayfa dosyaları, dışa aktarma, ayarlar |
 | `ui` | Compose ekranları |
+
+Arayüz: kendi tasarım dili (`ui/Theme.kt`) — gömülü Plus Jakarta Sans yazı tipi (SIL OFL 1.1), kurşun kalem
+sarısından turuncuya marka geçişi, koyu ve açık tema, yüzen hap biçimli alt menü.
 
 `keystore/karala-dev.jks` yalnızca yan yükleme içindir ve parolası depodadır; mağazaya çıkarken kendi anahtarınla
 değiştir.

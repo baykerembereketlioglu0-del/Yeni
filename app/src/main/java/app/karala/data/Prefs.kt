@@ -38,7 +38,10 @@ class Prefs(ctx: Context) {
     var laserColor by int("laserColor", 0xFFFF5252.toInt())
     var eraserSize by float("eraserSize", 16f)
     var eraserPartial by bool("eraserPartial", false)
+    /** Çizim girişi: false = el (parmak ve kalem çizer), true = kalem (yalnızca kalem ucu çizer). */
     var stylusOnly by bool("stylusOnly", false)
+    /** Ekran kalemi her başladığında "El mi, Kalem mi?" diye sorulsun mu? */
+    var askInputMode by bool("askInputMode", true)
     var shapeAssist by bool("shapeAssist", true)
     var pressure by bool("pressure", true)
     var boardOpacity by int("boardOpacity", 100)

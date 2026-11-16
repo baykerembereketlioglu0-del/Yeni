@@ -54,27 +54,31 @@ import java.util.Calendar
 
 @Composable
 fun ToolsScreen(nav: NavController) {
-    data class Tool(val route: String, val title: String, val hint: String, val icon: ImageVector)
+    data class Tool(val route: String, val title: String, val hint: String, val icon: ImageVector, val tint: Color)
+    val k = K
     val tools = listOf(
-        Tool("focus", "Odak (Pomodoro)", "25 dk çalış, 5 dk dinlen", Icons.Rounded.Timer),
-        Tool("stats", "İstatistik", "Çalışma süresi ve soru sayıların", Icons.Rounded.BarChart),
-        Tool("exams", "Deneme takibi", "Netlerini kaydet, gelişimini gör", Icons.Rounded.Leaderboard),
-        Tool("calc", "Hesap makinesi", "Bilimsel, trigonometri dahil", Icons.Rounded.Calculate),
-        Tool("formulas", "Formül kitapçığı", "Matematik, fizik, kimya, geometri", Icons.Rounded.Functions),
-        Tool("periodic", "Periyodik tablo", "118 element, Türkçe adlarıyla", Icons.Rounded.Science),
-        Tool("convert", "Birim çevirici", "Uzunluk, kütle, sıcaklık, enerji…", Icons.Rounded.SwapHoriz),
+        Tool("focus", "Odak", "Pomodoro: 25 dk çalış, 5 dk dinlen", Icons.Rounded.Timer, k.sun),
+        Tool("stats", "İstatistik", "Çalışma süren ve soru sayıların", Icons.Rounded.BarChart, k.mint),
+        Tool("exams", "Deneme takibi", "Netlerini kaydet, gelişimini gör", Icons.Rounded.Leaderboard, k.violet),
+        Tool("calc", "Hesap makinesi", "Bilimsel, trigonometri dahil", Icons.Rounded.Calculate, k.sky),
+        Tool("formulas", "Formül kitapçığı", "Matematik, geometri, fizik, kimya", Icons.Rounded.Functions, k.coral),
+        Tool("periodic", "Periyodik tablo", "118 element, Türkçe adlarıyla", Icons.Rounded.Science, k.mint),
+        Tool("convert", "Birim çevirici", "Uzunluk, kütle, sıcaklık, enerji…", Icons.Rounded.SwapHoriz, k.sun),
     )
     Screen("Araçlar") { pad ->
         LazyVerticalGrid(GridCells.Adaptive(160.dp), Modifier.padding(pad).fillMaxSize(),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             items(tools) { t ->
-                Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.surfaceContainer,
-                    modifier = Modifier.clip(MaterialTheme.shapes.medium).clickable { nav.navigate(t.route) }) {
-                    Column(Modifier.padding(16.dp).fillMaxWidth().heightIn(min = 104.dp)) {
-                        Icon(t.icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
-                        Spacer(Modifier.height(10.dp))
-                        Text(t.title, fontWeight = FontWeight.SemiBold)
+                KCard(Modifier.clip(MaterialTheme.shapes.medium).clickable { nav.navigate(t.route) }) {
+                    Column(Modifier.padding(16.dp).fillMaxWidth().heightIn(min = 118.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconBubble(t.icon, t.tint, 46)
+                            Spacer(Modifier.weight(1f))
+                            Icon(Icons.Rounded.ArrowOutward, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+                        }
+                        Spacer(Modifier.height(14.dp))
+                        Text(t.title, style = MaterialTheme.typography.titleMedium)
                         Text(t.hint, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
@@ -121,7 +125,7 @@ fun FocusScreen(onBack: () -> Unit) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(when (state.phase) { Phase.IDLE -> "HAZIR"; Phase.FOCUS -> "ODAK"; Phase.BREAK -> "KISA MOLA"; Phase.LONG_BREAK -> "UZUN MOLA" },
                         style = MaterialTheme.typography.labelLarge, color = color)
-                    Text(clock(remaining), fontSize = 56.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace)
+                    Text(clock(remaining), style = MaterialTheme.typography.displayLarge.copy(fontFeatureSettings = "tnum"))
                     Text("${state.round % prefs.roundsBeforeLongBreak.coerceAtLeast(1)}/${prefs.roundsBeforeLongBreak} tur",
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
@@ -425,7 +429,7 @@ fun ExamsScreen(onBack: () -> Unit) {
         LazyColumn(Modifier.padding(pad).fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 96.dp)) {
             if (exams.isEmpty()) item { Empty("Henüz deneme yok", "Her denemeden sonra doğru-yanlış sayını gir; netinin zaman içindeki gidişini gör.") }
             if (nets.size >= 2) item {
-                Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.surfaceContainer, modifier = Modifier.fillMaxWidth()) {
+                KCard(modifier = Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(14.dp)) {
                         val diff = nets.last() - nets[nets.size - 2]
                         Text("Net gelişimi", fontWeight = FontWeight.SemiBold)
@@ -447,7 +451,7 @@ fun ExamsScreen(onBack: () -> Unit) {
                 Spacer(Modifier.height(12.dp))
             }
             items(exams.reversed(), key = { it.id }) { e ->
-                Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.surfaceContainer,
+                KCard(
                     modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp).clip(MaterialTheme.shapes.medium).clickable { editing = e }) {
                     Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {

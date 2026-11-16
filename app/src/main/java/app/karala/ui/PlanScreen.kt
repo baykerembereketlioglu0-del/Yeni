@@ -35,10 +35,7 @@ fun PlanScreen() {
     var tab by remember { mutableIntStateOf(0) }
     Screen("Plan") { pad ->
         Column(Modifier.padding(pad).fillMaxSize()) {
-            TabRow(tab, containerColor = MaterialTheme.colorScheme.background) {
-                Tab(tab == 0, { tab = 0 }, text = { Text("Ödev ve sınavlar") })
-                Tab(tab == 1, { tab = 1 }, text = { Text("Ders programı") })
-            }
+            KTabs(listOf("Ödev ve sınavlar", "Ders programı"), tab, Modifier.padding(horizontal = 16.dp).padding(bottom = 4.dp)) { tab = it }
             if (tab == 0) TasksTab() else ScheduleTab()
         }
     }
@@ -101,7 +98,7 @@ private fun TasksTab() {
 private fun TaskRow(t: Task, subjects: List<Subject>, now: Long, onToggle: () -> Unit, onClick: () -> Unit) {
     val s = subjects.byId(t.subjectId)
     val late = !t.done && t.dueAt < now
-    Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.surfaceContainer,
+    KCard(
         modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp).clip(MaterialTheme.shapes.medium).clickable(onClick = onClick)) {
         Row(Modifier.padding(end = 14.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
             Checkbox(t.done, { onToggle() })
@@ -197,7 +194,7 @@ private fun ScheduleTab() {
                 item(key = "d$d") { SectionTitle(DAYS[d - 1]) }
                 items(list, key = { it.id }) { e ->
                     val s = subjects.byId(e.subjectId)
-                    Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.surfaceContainer,
+                    KCard(
                         modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp).clip(MaterialTheme.shapes.medium).clickable { editing = e }) {
                         Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
                             Text("${hm(e.startMinute)}\n${hm(e.endMinute)}", style = MaterialTheme.typography.labelMedium,

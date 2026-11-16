@@ -33,6 +33,17 @@ internal object Ui {
         0xFFB388FF.toInt(), 0xFF4FC3F7.toInt(), 0xFF3D7BFF.toInt(), 0xFF69F0AE.toInt(), 0xFF2E9E5B.toInt(), 0xFF9AA3B2.toInt(),
     )
 
+    private var regular: Typeface? = null
+    private var strong: Typeface? = null
+    /** Uygulamanın yazı tipi (Plus Jakarta Sans); yüklenemezse sistem yazı tipi. */
+    fun font(c: Context, bold: Boolean): Typeface {
+        if (regular == null) {
+            regular = runCatching { androidx.core.content.res.ResourcesCompat.getFont(c, app.karala.R.font.jakarta_medium) }.getOrNull() ?: Typeface.DEFAULT
+            strong = runCatching { androidx.core.content.res.ResourcesCompat.getFont(c, app.karala.R.font.jakarta_bold) }.getOrNull() ?: Typeface.DEFAULT_BOLD
+        }
+        return (if (bold) strong else regular)!!
+    }
+
     fun dp(c: Context, v: Float): Int = (v * c.resources.displayMetrics.density + 0.5f).toInt()
     fun dp(c: Context, v: Int): Int = dp(c, v.toFloat())
 
@@ -62,7 +73,7 @@ internal object Ui {
 
     fun label(c: Context, text: String, sp: Float = 13f, color: Int = TEXT, bold: Boolean = false) = TextView(c).apply {
         this.text = text; setTextColor(color); setTextSize(TypedValue.COMPLEX_UNIT_SP, sp)
-        if (bold) typeface = Typeface.DEFAULT_BOLD
+        typeface = font(c, bold)
         includeFontPadding = false
     }
 
@@ -85,7 +96,10 @@ internal object Ui {
         setBackgroundColor(OUTLINE)
     }
 
-    fun row(c: Context): LinearLayout = LinearLayout(c).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+    // Taban çizgisi hizalaması kapalı: karışık içerikli satırlarda yüksekliği öngörülemez biçimde büyütüyor.
+    fun row(c: Context): LinearLayout = LinearLayout(c).apply {
+        orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; isBaselineAligned = false
+    }
     fun col(c: Context): LinearLayout = LinearLayout(c).apply { orientation = LinearLayout.VERTICAL }
 
     fun overlayParams(w: Int = -2, h: Int = -2): WindowManager.LayoutParams = WindowManager.LayoutParams(

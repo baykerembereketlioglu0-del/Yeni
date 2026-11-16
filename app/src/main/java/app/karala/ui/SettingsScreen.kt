@@ -44,12 +44,12 @@ private fun SwitchRow(title: String, hint: String, checked: Boolean, onChange: (
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun SettingsScreen(onBack: () -> Unit, onTheme: (Int) -> Unit) {
+fun SettingsScreen(onBack: () -> Unit, onTheme: (Int) -> Unit, pen: PenLauncher = rememberPenLauncher()) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val subjects by repo.dao.subjects().collectAsStateWithLifecycle(emptyList())
     var theme by remember { mutableIntStateOf(prefs.theme) }
-    var stylusOnly by remember { mutableStateOf(prefs.stylusOnly) }
+    var askMode by remember { mutableStateOf(prefs.askInputMode) }
     var shapeAssist by remember { mutableStateOf(prefs.shapeAssist) }
     var shot by remember { mutableStateOf(prefs.captureWithScreenshot) }
     var canOverlay by remember { mutableStateOf(Settings.canDrawOverlays(ctx)) }
@@ -77,10 +77,19 @@ fun SettingsScreen(onBack: () -> Unit, onTheme: (Int) -> Unit) {
                     Text(if (canOverlay) "İzin verildi" else "Ekran kalemi için gerekli", style = MaterialTheme.typography.bodySmall,
                         color = if (canOverlay) Good else MaterialTheme.colorScheme.error)
                 }
-                if (!canOverlay) Button({ runCatching { ctx.startActivity(MainActivity.overlayPermissionIntent(ctx)) } }) { Text("İzin ver") }
+                if (!canOverlay) Button({ pen.permissionSheet = true }) { Text("İzin ver") }
             }
             SwitchRow("Kaydederken ekran görüntüsü al", "Soru, çözümünle birlikte deftere girer. Oturum başına bir kez sistem izni istenir.", shot) { shot = it; prefs.captureWithScreenshot = it }
-            SwitchRow("Yalnızca kalem ucuyla çiz", "Kalemli tabletlerde avuç içi ve parmak dokunuşlarını yok sayar.", stylusOnly) { stylusOnly = it; prefs.stylusOnly = it }
+            Text("Çizim girişi", modifier = Modifier.padding(top = 8.dp))
+            Text("El: parmağınla çizersin. Kalem: yalnızca kalem ucu çizer, elin ekrana değse de iz bırakmaz.",
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.height(8.dp))
+            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                listOf("El", "Kalem").forEachIndexed { i, name ->
+                    SegmentedButton(pen.stylus == (i == 1), { pen.stylus = i == 1; prefs.stylusOnly = i == 1 }, SegmentedButtonDefaults.itemShape(i, 2)) { Text(name) }
+                }
+            }
+            SwitchRow("Her başlatışta sor", "Ekran kalemi açılırken \"El mi, Kalem mi?\" diye sorar.", askMode) { askMode = it; prefs.askInputMode = it }
             SwitchRow("Basılı tut → şekle çevir", "Çizgiyi bitirmeden kalemi sabit tut: doğru, dikdörtgen ya da elipse düzelir.", shapeAssist) { shapeAssist = it; prefs.shapeAssist = it }
 
             SectionTitle("Günlük hedefler")

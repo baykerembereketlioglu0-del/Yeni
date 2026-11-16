@@ -48,6 +48,8 @@ class InkView(context: Context, private val editorMode: Boolean) : View(context)
     var backgroundBitmap: Bitmap? = null
         set(v) { field = v; invalidate() }
 
+    /** Kalem modunda parmak dokunuşu yok sayıldığında (kullanıcıya ipucu göstermek için). */
+    var onRejectedTouch: (() -> Unit)? = null
     /** İçerik değiştiğinde (kaydetme tetiklemek için). */
     var onChanged: (() -> Unit)? = null
     /** Geri al/yinele durumu değiştiğinde. */
@@ -222,7 +224,7 @@ class InkView(context: Context, private val editorMode: Boolean) : View(context)
             MotionEvent.ACTION_DOWN -> {
                 val type = e.getToolType(0)
                 val isStylus = type == MotionEvent.TOOL_TYPE_STYLUS || type == MotionEvent.TOOL_TYPE_ERASER
-                if (stylusOnly && !isStylus) return true
+                if (stylusOnly && !isStylus) { onRejectedTouch?.invoke(); return true }
                 activePointer = e.getPointerId(0)
                 val stylusErase = type == MotionEvent.TOOL_TYPE_ERASER ||
                     (isStylus && (e.buttonState and MotionEvent.BUTTON_STYLUS_PRIMARY) != 0)

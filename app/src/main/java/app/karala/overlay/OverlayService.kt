@@ -112,7 +112,16 @@ class OverlayService : Service() {
             }
             ACTION_TOGGLE -> { foreground(grabber.ready); ensureAttached(); setAllHidden(!allHidden) }
             ACTION_STOP -> { foreground(grabber.ready); shutdown() }
-            else -> { foreground(grabber.ready); ensureAttached(); if (allHidden) setAllHidden(false) }
+            else -> {
+                foreground(grabber.ready)
+                // Uygulama içinden başlatıldıysa seçim zaten yapılmıştır; kutucuk/kısayoldan geldiyse burada sorulur.
+                val input = intent?.getStringExtra(EXTRA_INPUT)
+                if (input != null) prefs.stylusOnly = input == INPUT_STYLUS
+                val fresh = ensureAttached()
+                if (allHidden) setAllHidden(false)
+                if (input != null && attached) { applyTool(); toolbar.refresh() }
+                else if (fresh && prefs.askInputMode) showModeChooser()
+            }
         }
         return START_NOT_STICKY
     }
@@ -151,8 +160,9 @@ class OverlayService : Service() {
 
     // ---- Pencereler ----
 
-    private fun ensureAttached() {
-        if (attached) return
+    /** @return pencereler bu çağrıda eklendiyse true */
+    private fun ensureAttached(): Boolean {
+        if (attached) return false
         loadDraft()
         tool = prefs.lastTool.takeIf { it != ToolType.ERASER } ?: ToolType.PEN
 
@@ -177,14 +187,45 @@ class OverlayService : Service() {
             wm.addView(toolbar.root, toolbar.params)
         } catch (e: Exception) {
             toast("Ekran kalemi açılamadı: ${e.message}")
-            stopSelf(); return
+            stopSelf(); return false
         }
         attached = true
         ink.setPage(pages[pageIndex])
         applyTool(); applyBoardOpacity()
         toolbar.refresh()
+        ink.onRejectedTouch = { hintStylusMode() }
         running.value = true
         refreshSubjects {}
+        return true
+    }
+
+    // ---- Çizim girişi: el / kalem ----
+
+    private var chooser: ModeChooser? = null
+    private var lastHintAt = 0L
+    private var hintCount = 0
+
+    internal fun showModeChooser() {
+        if (!attached || chooser?.shown == true) return
+        toolbar.closePanel()
+        chooser = ModeChooser(this, prefs.stylusOnly,
+            onChosen = { stylus, dontAsk -> if (dontAsk) prefs.askInputMode = false; setInputMode(stylus, announce = true) },
+            onDismissed = {}).also { it.show() }
+    }
+
+    internal fun setInputMode(stylus: Boolean, announce: Boolean) {
+        prefs.stylusOnly = stylus
+        hintCount = 0
+        applyTool(); toolbar.refresh()
+        if (announce) toast(if (stylus) "Kalem modu: yalnızca kalem ucu çizer" else "El modu: parmağınla çizebilirsin")
+    }
+
+    /** Kalem modunda parmakla çizmeye çalışana seyrek bir hatırlatma (aksi hâlde "bozuk" sanılır). */
+    private fun hintStylusMode() {
+        val now = SystemClock.uptimeMillis()
+        if (hintCount >= 3 || now - lastHintAt < 6000) return
+        lastHintAt = now; hintCount++
+        toast("Kalem modundasın: parmak çizmez. Değiştirmek için araç çubuğundaki kalem düğmesine bas.")
     }
 
     private fun inkFlags(pass: Boolean): Int {
@@ -245,6 +286,7 @@ class OverlayService : Service() {
         allHidden = h
         toolbar.root.visibility = if (h) View.GONE else View.VISIBLE
         widgets.values.forEach { it.setVisible(!h) }
+        if (h) chooser?.dismiss()
         updateInkWindow()
         foreground(grabber.ready)
     }
@@ -405,6 +447,7 @@ class OverlayService : Service() {
         if (attached) {
             // Senkron yaz: servis kapanırken son çizim kaybolmasın.
             runCatching { draftFile.writeText(InkJson.encodePages(pages, pageIndex)) }
+            chooser?.dismiss()
             widgets.values.toList().forEach { it.dismiss() }
             runCatching { wm.removeView(toolbar.root) }
             runCatching { wm.removeView(ink) }
@@ -422,6 +465,9 @@ class OverlayService : Service() {
         const val ACTION_TOGGLE = "app.karala.overlay.TOGGLE"
         const val ACTION_PROJECTION = "app.karala.overlay.PROJECTION"
         const val ACTION_PROJECTION_DENIED = "app.karala.overlay.PROJECTION_DENIED"
+        const val EXTRA_INPUT = "input"
+        const val INPUT_HAND = "hand"
+        const val INPUT_STYLUS = "stylus"
         const val EXTRA_CODE = "code"
         const val EXTRA_DATA = "data"
         private const val NOTIF_ID = 1
@@ -433,8 +479,15 @@ class OverlayService : Service() {
         /** Servis çalışıyor mu? Arayüz bunu gözlemler. */
         val running = MutableStateFlow(false)
 
-        fun start(ctx: Context) =
-            ContextCompat.startForegroundService(ctx, Intent(ctx, OverlayService::class.java).setAction(ACTION_START))
+        /**
+         * @param stylus çizim girişi önceden seçildiyse (true = kalem, false = el); null ise servis,
+         *   "her seferinde sor" ayarı açıksa kendi seçim penceresini gösterir.
+         */
+        fun start(ctx: Context, stylus: Boolean? = null) {
+            val i = Intent(ctx, OverlayService::class.java).setAction(ACTION_START)
+            if (stylus != null) i.putExtra(EXTRA_INPUT, if (stylus) INPUT_STYLUS else INPUT_HAND)
+            ContextCompat.startForegroundService(ctx, i)
+        }
 
         fun stop(ctx: Context) { ctx.stopService(Intent(ctx, OverlayService::class.java)) }
     }

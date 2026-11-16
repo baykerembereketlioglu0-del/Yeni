@@ -6,6 +6,7 @@ import android.widget.FrameLayout
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performClick
 import androidx.navigation.compose.rememberNavController
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.karala.data.ExamResult
@@ -71,6 +72,24 @@ class ScreenshotTest {
         seed()
         shot("01-home") { HomeScreen(rememberNavController()) }
     }
+    @Test fun homeLight() {
+        seed()
+        compose.setContent { KaralaTheme(1) { HomeScreen(rememberNavController()) } }
+        compose.waitForIdle()
+        compose.onRoot().captureRoboImage("build/shots/01-home-light.png")
+    }
+    @Test fun modeSheet() {
+        var picked: Pair<Boolean, Boolean>? = null
+        shot("15-mode-sheet") { androidx.compose.material3.Surface(color = androidx.compose.material3.MaterialTheme.colorScheme.surfaceContainerLow) {
+            ModeSheetContent(initialStylus = true, initialDontAsk = false) { s, d -> picked = s to d } } }
+        compose.onNode(androidx.compose.ui.test.hasText("El")).performClick()
+        compose.onNode(androidx.compose.ui.test.hasText("Ekran kalemini başlat")).performClick()
+        org.junit.Assert.assertEquals(false to false, picked)
+    }
+    @Test fun permissionSheet() {
+        shot("16-permission-sheet") { androidx.compose.material3.Surface(color = androidx.compose.material3.MaterialTheme.colorScheme.surfaceContainerLow) {
+            PermissionSheetContent({}, {}) } }
+    }
     @Test fun plan() { seed(); shot("02-plan") { PlanScreen() } }
     @Test fun tools() { shot("03-tools") { ToolsScreen(rememberNavController()) } }
     @Test fun focus() { shot("04-focus") { FocusScreen {} } }
@@ -129,26 +148,73 @@ class ScreenshotTest {
         snap(col, "21-widgets")
     }
 
+    private fun wmViews(ctx: android.content.Context): List<View> =
+        org.robolectric.shadow.api.Shadow.extract<org.robolectric.shadows.ShadowWindowManagerImpl>(ctx.getSystemService(android.view.WindowManager::class.java)).views
+
+    private fun clickIn(root: View, desc: String) {
+        val out = ArrayList<View>(); root.findViewsWithText(out, desc as CharSequence, View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
+        org.junit.Assert.assertTrue("button: $desc", out.isNotEmpty()); out[0].performClick()
+        org.robolectric.shadows.ShadowLooper.idleMainLooper()
+    }
+
+    private fun down(v: View, toolType: Int) {
+        val t = android.os.SystemClock.uptimeMillis()
+        val props = arrayOf(android.view.MotionEvent.PointerProperties().apply { id = 0; this.toolType = toolType })
+        fun ev(action: Int, x: Float, y: Float) = android.view.MotionEvent.obtain(t, t, action, 1, props,
+            arrayOf(android.view.MotionEvent.PointerCoords().apply { this.x = x; this.y = y; pressure = 0.6f; size = 1f }), 0, 0, 1f, 1f, 0, 0, android.view.InputDevice.SOURCE_TOUCHSCREEN, 0)
+        v.dispatchTouchEvent(ev(android.view.MotionEvent.ACTION_DOWN, 100f, 100f))
+        v.dispatchTouchEvent(ev(android.view.MotionEvent.ACTION_MOVE, 300f, 260f))
+        v.dispatchTouchEvent(ev(android.view.MotionEvent.ACTION_UP, 300f, 260f))
+    }
+
     /** Katman servisini gerçekten başlatır: pencereler eklenir, araç çubuğu ve paneller çizilir. */
     @Test fun overlayService() {
         org.robolectric.shadows.ShadowSettings.setCanDrawOverlays(true)
-        val controller = org.robolectric.Robolectric.buildService(app.karala.overlay.OverlayService::class.java,
-            android.content.Intent(App.instance, app.karala.overlay.OverlayService::class.java).setAction(app.karala.overlay.OverlayService.ACTION_START))
+        val Svc = app.karala.overlay.OverlayService::class.java
+        App.instance.prefs.askInputMode = true; App.instance.prefs.stylusOnly = false
+        java.io.File(App.instance.filesDir, "overlay_draft.json").delete()
+        val controller = org.robolectric.Robolectric.buildService(Svc, android.content.Intent(App.instance, Svc).setAction(app.karala.overlay.OverlayService.ACTION_START))
         val svc = controller.create().startCommand(0, 1).get()
         org.robolectric.shadows.ShadowLooper.idleMainLooper()
         org.junit.Assert.assertTrue(app.karala.overlay.OverlayService.running.value)
-        val wm = org.robolectric.shadow.api.Shadow.extract<org.robolectric.shadows.ShadowWindowManagerImpl>(svc.getSystemService(android.view.WindowManager::class.java))
-        val views: List<View> = wm.views
-        val inkWindow = views.single { it is InkView }
-        val bar = views.last()
-        org.junit.Assert.assertTrue(bar is android.widget.LinearLayout)
-        // Kalem seçiliyken ikinci dokunuş ayar panelini açar.
-        fun click(desc: String) {
-            val out = ArrayList<View>(); bar.findViewsWithText(out, desc as CharSequence, View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
-            org.junit.Assert.assertTrue("button: $desc", out.isNotEmpty()); out[0].performClick()
-            org.robolectric.shadows.ShadowLooper.idleMainLooper()
-        }
+        val inkWindow = wmViews(svc).single { it is InkView } as InkView
+        val bar = wmViews(svc).first { it is android.widget.LinearLayout }
+
+        // Başlangıçta "El mi, Kalem mi?" penceresi en üstte olmalı.
+        val chooser = wmViews(svc).last()
+        org.junit.Assert.assertTrue(chooser is android.widget.FrameLayout)
+        snap(chooser, "28-mode-chooser", 1233, 1500)
+        clickIn(chooser, "Seçimimi hatırla")
+        snap(chooser, "29-mode-chooser-remember", 1233, 1500)
+        clickIn(chooser, "Kalem modu")
+        org.junit.Assert.assertTrue(App.instance.prefs.stylusOnly)
+        org.junit.Assert.assertFalse(App.instance.prefs.askInputMode)
+        org.junit.Assert.assertFalse(wmViews(svc).contains(chooser))
+
+        // Kalem modu: parmak çizmez, kalem ucu çizer.
+        inkWindow.layout(0, 0, 1200, 800)
+        down(inkWindow, android.view.MotionEvent.TOOL_TYPE_FINGER)
+        org.junit.Assert.assertEquals(0, inkWindow.page.strokes.size)
+        down(inkWindow, android.view.MotionEvent.TOOL_TYPE_STYLUS)
+        org.junit.Assert.assertEquals(1, inkWindow.page.strokes.size)
+        // Araç çubuğundan el moduna geç: artık parmak da çizer.
         snap(bar, "22-toolbar")
+        clickIn(bar, "Kalem modu açık: yalnızca kalem ucu çizer")
+        org.junit.Assert.assertFalse(App.instance.prefs.stylusOnly)
+        down(inkWindow, android.view.MotionEvent.TOOL_TYPE_FINGER)
+        org.junit.Assert.assertEquals(2, inkWindow.page.strokes.size)
+        clickIn(bar, "Geri al"); clickIn(bar, "Geri al")
+        org.junit.Assert.assertEquals(0, inkWindow.page.strokes.size)
+
+        // Uygulamadan seçimle başlatma: servis sormaz, modu uygular.
+        controller.withIntent(android.content.Intent(App.instance, Svc).setAction(app.karala.overlay.OverlayService.ACTION_START)
+            .putExtra(app.karala.overlay.OverlayService.EXTRA_INPUT, app.karala.overlay.OverlayService.INPUT_STYLUS)).startCommand(0, 2)
+        org.robolectric.shadows.ShadowLooper.idleMainLooper()
+        org.junit.Assert.assertTrue(App.instance.prefs.stylusOnly)
+        org.junit.Assert.assertTrue(inkWindow.stylusOnly)
+        clickIn(bar, "Kalem modu açık: yalnızca kalem ucu çizer")
+
+        fun click(desc: String) = clickIn(bar, desc)
         click("Kalem"); snap(bar, "23-toolbar-pen")
         click("Silgi"); click("Silgi"); snap(bar, "24-toolbar-eraser")
         click("Tahta / zemin"); snap(bar, "25-toolbar-board")
@@ -165,7 +231,8 @@ class ScreenshotTest {
         click("Sonraki sayfa"); org.junit.Assert.assertEquals(1, svc.pageCount)
         controller.destroy()
         org.junit.Assert.assertFalse(app.karala.overlay.OverlayService.running.value)
-        org.junit.Assert.assertTrue(wm.views.none { it is InkView || it === bar })
+        org.junit.Assert.assertTrue(wmViews(App.instance).none { it is InkView || it === bar })
+        App.instance.prefs.askInputMode = true
     }
 
     /** Katmandan kaydetme hattı: defter + sayfa + dosyalar oluşur, hatalı soru ertesi güne planlanır, düzenleyici açılır. */
