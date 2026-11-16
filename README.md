@@ -7,7 +7,7 @@ unutmadan önce sana yeniden sorulur.
 
 Reklam yok, hesap yok, abonelik yok. Her şey cihazda saklanır.
 
-**Kurulum:** [`dist/karala-1.1.0.apk`](dist/karala-1.1.0.apk) dosyasını tablete/telefona indirip aç (Android 8.0+).
+**Kurulum:** [`dist/karala-1.1.1.apk`](dist/karala-1.1.1.apk) dosyasını tablete/telefona indirip aç (Android 8.0+).
 İlk açılışta "diğer uygulamaların üzerinde göster" iznini ver.
 
 > **Anahtar gri ve "Kısıtlı ayar tarafından kontrol ediliyor" mu yazıyor?** Mağaza dışından kurulan uygulamalarda
@@ -24,8 +24,8 @@ Ekran kalemi her başladığında nasıl çizeceğini sorar:
 | **Kalem** | Yalnızca kalem ucu çizer. Elin ya da avuç içi ekrana değse de iz bırakmaz. |
 
 "Seçimimi hatırla" ile bir daha sorulmaz; araç çubuğundaki el / kalem düğmesiyle istediğin an değiştirirsin
-(uzun basınca seçim penceresi yeniden açılır). Kalem modundayken parmakla çizmeye çalışırsan kısa bir hatırlatma
-görünür. Aynı seçim defter düzenleyicide ve Ayarlar'da da var.
+(uzun basınca seçim penceresi yeniden açılır). Kalem modundayken cihaz hiç kalem ucu algılamadıysa (kalemsiz
+cihaz ya da parmak gibi algılanan pasif kalem) ikinci dokunuşta "El moduna geç" düğmeli bir şerit çıkar. Aynı seçim defter düzenleyicide ve Ayarlar'da da var.
 
 ![El mi, kalem mi?](docs/ekranlar/el-mi-kalem-mi.png)
 
@@ -43,8 +43,8 @@ görünür. Aynı seçim defter düzenleyicide ve Ayarlar'da da var.
 | Basılı tut → şekil | Çizgiyi bitirmeden kalemi sabit tut: el çizimi doğruya / dikdörtgene / elipse düzelir |
 | Lazer işaretçi | İz bırakır, bir saniyede söner |
 | Dokunma modu | Çizimler ekranda kalır, dokunuşlar alttaki uygulamaya geçer (videoyu oynat/durdur) |
-| Sayfalar | Her soru için ayrı sayfa; sayfalar oturumlar arasında saklanır |
-| Tahta | Beyaz tahta, kara tahta, kareli, çizgili, noktalı zemin; opaklık ayarı |
+| Sayfalar | Her soru için ayrı sayfa; çizimler oturumlar arasında saklanır |
+| Tahta | Beyaz tahta, kara tahta, kareli, çizgili, noktalı zemin; opaklık ayarı. Tahta alttaki ekranı kapatır: açıkken düğmesi yeşil yanar ve ekran kalemi her başlatışta yeniden şeffaf açılır |
 | Kaydet | Seçtiğin dersin o günkü defterine ya da hatalı sorulara; istersen ekran görüntüsüyle |
 | Kalem ucu desteği | Basınca duyarlı çizgi, kalemdeki silgi/düğme ile silme, el / kalem girişi (avuç içi reddi) |
 | Yüzen araçlar | Kronometre (soru başı süre), Pomodoro, bilimsel hesap makinesi, doğru/yanlış/boş soru sayacı |

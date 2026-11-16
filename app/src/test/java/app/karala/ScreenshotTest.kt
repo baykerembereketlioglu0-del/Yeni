@@ -172,13 +172,18 @@ class ScreenshotTest {
         org.robolectric.shadows.ShadowSettings.setCanDrawOverlays(true)
         val Svc = app.karala.overlay.OverlayService::class.java
         App.instance.prefs.askInputMode = true; App.instance.prefs.stylusOnly = false
-        java.io.File(App.instance.filesDir, "overlay_draft.json").delete()
+        // Önceki oturumdan beyaz tahtalı bir taslak kalmış olsun: çizim geri gelmeli, tahta gelmemeli.
+        java.io.File(App.instance.filesDir, "overlay_draft.json").writeText(app.karala.ink.InkJson.encodePages(
+            listOf(InkPage(1200, 800, background = PageBackground.WHITE).also { strokes(it) }), 0))
         val controller = org.robolectric.Robolectric.buildService(Svc, android.content.Intent(App.instance, Svc).setAction(app.karala.overlay.OverlayService.ACTION_START))
         val svc = controller.create().startCommand(0, 1).get()
         org.robolectric.shadows.ShadowLooper.idleMainLooper()
         org.junit.Assert.assertTrue(app.karala.overlay.OverlayService.running.value)
         val inkWindow = wmViews(svc).single { it is InkView } as InkView
         val bar = wmViews(svc).first { it is android.widget.LinearLayout }
+        org.junit.Assert.assertEquals("ekran kalemi şeffaf başlamalı", PageBackground.NONE, inkWindow.page.background)
+        org.junit.Assert.assertEquals(7, inkWindow.page.strokes.size)
+        inkWindow.clearAll()
 
         // Başlangıçta "El mi, Kalem mi?" penceresi en üstte olmalı.
         val chooser = wmViews(svc).last()
@@ -191,11 +196,28 @@ class ScreenshotTest {
         org.junit.Assert.assertFalse(App.instance.prefs.askInputMode)
         org.junit.Assert.assertFalse(wmViews(svc).contains(chooser))
 
-        // Kalem modu: parmak çizmez, kalem ucu çizer.
+        // Kalem modu: parmak çizmez. Kalem hiç algılanmadıysa ikinci denemede "El moduna geç" şeridi çıkar.
         inkWindow.layout(0, 0, 1200, 800)
+        val before = wmViews(svc).size
         down(inkWindow, android.view.MotionEvent.TOOL_TYPE_FINGER)
         org.junit.Assert.assertEquals(0, inkWindow.page.strokes.size)
+        org.junit.Assert.assertEquals(before, wmViews(svc).size)
+        down(inkWindow, android.view.MotionEvent.TOOL_TYPE_FINGER)
+        org.junit.Assert.assertEquals(before + 1, wmViews(svc).size)
+        val banner = wmViews(svc).last()
+        snap(banner, "29-switch-banner")
+        clickIn(banner, "El moduna geç")
+        org.junit.Assert.assertFalse(App.instance.prefs.stylusOnly)
+        org.junit.Assert.assertEquals(before, wmViews(svc).size)
+        down(inkWindow, android.view.MotionEvent.TOOL_TYPE_FINGER)
+        org.junit.Assert.assertEquals(1, inkWindow.page.strokes.size)
+        inkWindow.clearAll()
+        // Yeniden kalem modu: kalem ucu çizer; kalem görüldükten sonra şerit bir daha çıkmaz.
+        clickIn(bar, "El modu açık: parmakla çizilir")
+        org.junit.Assert.assertTrue(App.instance.prefs.stylusOnly)
         down(inkWindow, android.view.MotionEvent.TOOL_TYPE_STYLUS)
+        down(inkWindow, android.view.MotionEvent.TOOL_TYPE_FINGER); down(inkWindow, android.view.MotionEvent.TOOL_TYPE_FINGER)
+        org.junit.Assert.assertEquals(before, wmViews(svc).size)
         org.junit.Assert.assertEquals(1, inkWindow.page.strokes.size)
         // Araç çubuğundan el moduna geç: artık parmak da çizer.
         snap(bar, "22-toolbar")
@@ -218,6 +240,15 @@ class ScreenshotTest {
         click("Kalem"); snap(bar, "23-toolbar-pen")
         click("Silgi"); click("Silgi"); snap(bar, "24-toolbar-eraser")
         click("Tahta / zemin"); snap(bar, "25-toolbar-board")
+        // Tahta açılınca düğme durumu değişir; kapatınca ekran yeniden şeffaf olur.
+        val pills = ArrayList<View>(); bar.findViewsWithText(pills, "Beyaz tahta" as CharSequence, View.FIND_VIEWS_WITH_TEXT)
+        pills[0].performClick(); org.robolectric.shadows.ShadowLooper.idleMainLooper()
+        org.junit.Assert.assertEquals(PageBackground.WHITE, inkWindow.page.background)
+        snap(bar, "25-toolbar-board-on")
+        pills.clear(); bar.findViewsWithText(pills, "Şeffaf" as CharSequence, View.FIND_VIEWS_WITH_TEXT)
+        pills[0].performClick(); org.robolectric.shadows.ShadowLooper.idleMainLooper()
+        org.junit.Assert.assertEquals(PageBackground.NONE, inkWindow.page.background)
+        click("Tahta açık: alttaki ekran gizli".let { "Tahta / zemin" })
         click("Kaydet"); snap(bar, "26-toolbar-save")
         click("Araçlar"); snap(bar, "27-toolbar-more")
         click("Dokunma modu: alttaki uygulamayı kullan")

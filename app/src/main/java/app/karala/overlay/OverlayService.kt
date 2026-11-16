@@ -30,6 +30,7 @@ import app.karala.data.Subject
 import app.karala.ink.InkJson
 import app.karala.ink.InkPage
 import app.karala.ink.InkView
+import app.karala.ink.PageBackground
 import app.karala.ink.ToolType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -215,17 +216,56 @@ class OverlayService : Service() {
 
     internal fun setInputMode(stylus: Boolean, announce: Boolean) {
         prefs.stylusOnly = stylus
-        hintCount = 0
+        hintCount = 0; rejectedTouches = 0
+        dismissBanner()
         applyTool(); toolbar.refresh()
         if (announce) toast(if (stylus) "Kalem modu: yalnızca kalem ucu çizer" else "El modu: parmağınla çizebilirsin")
     }
 
-    /** Kalem modunda parmakla çizmeye çalışana seyrek bir hatırlatma (aksi hâlde "bozuk" sanılır). */
+    /**
+     * Kalem modunda parmak dokunuşu yok sayıldı.
+     * Bu oturumda hiç kalem ucu görülmediyse (kalemsiz cihaz, ya da parmak gibi algılanan pasif kalem)
+     * kullanıcı hiçbir şey çizemez; ikinci denemede "El moduna geç" düğmeli bir şerit gösterilir.
+     * Kalem görüldüyse bunlar avuç içi dokunuşlarıdır: yalnızca seyrek bir hatırlatma yeter.
+     */
     private fun hintStylusMode() {
+        rejectedTouches++
+        if (!ink.stylusEverSeen) { if (rejectedTouches >= 2) showSwitchBanner(); return }
+        dismissBanner()
         val now = SystemClock.uptimeMillis()
         if (hintCount >= 3 || now - lastHintAt < 6000) return
         lastHintAt = now; hintCount++
         toast("Kalem modundasın: parmak çizmez. Değiştirmek için araç çubuğundaki kalem düğmesine bas.")
+    }
+
+    private var rejectedTouches = 0
+    private var banner: View? = null
+    private val bannerTimeout = Runnable { dismissBanner() }
+
+    private fun showSwitchBanner() {
+        if (banner != null) return
+        val row = Ui.row(this).apply {
+            background = Ui.bg(Ui.SURFACE, Ui.dp(this@OverlayService, 22).toFloat(), Ui.ACCENT, Ui.dp(this@OverlayService, 2))
+            val p = Ui.dp(this@OverlayService, 14); setPadding(p, Ui.dp(this@OverlayService, 10), Ui.dp(this@OverlayService, 10), Ui.dp(this@OverlayService, 10))
+        }
+        row.addView(Ui.label(this, "Kalem algılanmadı", 14f, Ui.TEXT).apply { maxLines = 1 },
+            android.widget.LinearLayout.LayoutParams(-2, -2).apply { marginEnd = Ui.dp(this@OverlayService, 12) })
+        val go = Ui.pill(this, "El moduna geç") { setInputMode(false, announce = true) }
+        Ui.setPillActive(go, true)
+        go.contentDescription = "El moduna geç"; go.maxLines = 1
+        row.addView(go)
+        val params = Ui.overlayParams().apply {
+            gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
+            y = Ui.dp(this@OverlayService, 72)
+        }
+        runCatching { wm.addView(row, params); banner = row }
+        handler.removeCallbacks(bannerTimeout); handler.postDelayed(bannerTimeout, 12_000)
+    }
+
+    private fun dismissBanner() {
+        handler.removeCallbacks(bannerTimeout)
+        banner?.let { runCatching { wm.removeView(it) } }
+        banner = null
     }
 
     private fun inkFlags(pass: Boolean): Int {
@@ -268,6 +308,16 @@ class OverlayService : Service() {
 
     internal fun applyBoardOpacity() { ink.boardAlpha = prefs.boardOpacity * 255 / 100 }
 
+    /** Tahta zeminini değiştirir. Zemin açıkken alttaki ekran görünmez; bunu kullanıcıya açıkça söyler. */
+    internal fun setBoard(bg: PageBackground) {
+        val was = ink.page.background
+        ink.setPageBackground(bg)
+        toolbar.refresh()
+        if (bg != PageBackground.NONE && was == PageBackground.NONE)
+            toast("Tahta açık: alttaki ekran gizlendi. Ekrana yazmak için Tahta → Şeffaf")
+        else if (bg == PageBackground.NONE && was != PageBackground.NONE) toast("Tahta kapandı: doğrudan ekranın üzerine yazıyorsun")
+    }
+
     internal fun setPassThrough(p: Boolean) {
         passThrough = p
         if (p) toolbar.closePanel()
@@ -286,7 +336,7 @@ class OverlayService : Service() {
         allHidden = h
         toolbar.root.visibility = if (h) View.GONE else View.VISIBLE
         widgets.values.forEach { it.setVisible(!h) }
-        if (h) chooser?.dismiss()
+        if (h) { chooser?.dismiss(); dismissBanner() }
         updateInkWindow()
         foreground(grabber.ready)
     }
@@ -423,7 +473,12 @@ class OverlayService : Service() {
     private fun loadDraft() {
         val f = draftFile
         if (!f.exists()) return
-        runCatching { InkJson.decodePages(f.readText()) }.onSuccess { (p, cur) -> pages = p; pageIndex = cur }
+        runCatching { InkJson.decodePages(f.readText()) }.onSuccess { (p, cur) ->
+            // Çizimler geri gelir ama tahta zemini gelmez: ekran kalemi her zaman şeffaf başlar ve
+            // doğrudan ekranın üzerine yazılır. (Açık unutulan beyaz tahta ekranı tümüyle kapatıyordu.)
+            p.forEach { it.background = PageBackground.NONE }
+            pages = p; pageIndex = cur
+        }
     }
 
     private fun writeDraft() {
@@ -447,7 +502,7 @@ class OverlayService : Service() {
         if (attached) {
             // Senkron yaz: servis kapanırken son çizim kaybolmasın.
             runCatching { draftFile.writeText(InkJson.encodePages(pages, pageIndex)) }
-            chooser?.dismiss()
+            chooser?.dismiss(); dismissBanner()
             widgets.values.toList().forEach { it.dismiss() }
             runCatching { wm.removeView(toolbar.root) }
             runCatching { wm.removeView(ink) }

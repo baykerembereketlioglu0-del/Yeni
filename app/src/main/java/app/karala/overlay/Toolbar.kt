@@ -188,7 +188,10 @@ internal class Toolbar(private val svc: OverlayService) {
         pageLabel.text = "${svc.pageIndex + 1}/${svc.pageCount}"
         Ui.setEnabledLook(prevBtn, svc.pageIndex > 0)
         Ui.setIcon(nextBtn, if (svc.pageIndex == svc.pageCount - 1) Icon.PLUS else Icon.RIGHT)
-        Ui.setActive(boardBtn, panel == Panel.BOARD)
+        // Tahta açıkken düğme yeşil yanar: ekranın neden kapandığı bir bakışta anlaşılır.
+        val boardOn = svc.ink.page.background != PageBackground.NONE
+        Ui.setActive(boardBtn, boardOn || panel == Panel.BOARD, if (boardOn) Ui.GOOD else Ui.ACCENT)
+        boardBtn.contentDescription = if (boardOn) "Tahta açık: alttaki ekran gizli" else "Tahta / zemin"
         Ui.setActive(saveBtn, panel == Panel.SAVE)
         Ui.setActive(moreBtn, panel == Panel.MORE)
         Ui.setIcon(eyeBtn, if (svc.inkHidden) Icon.EYE_OFF else Icon.EYE)
@@ -274,7 +277,7 @@ internal class Toolbar(private val svc: OverlayService) {
             PageBackground.GRID to "Kareli", PageBackground.LINED to "Çizgili", PageBackground.DOTS to "Noktalı",
         )
         for ((bg, name) in names) {
-            val p = Ui.pill(ctx, name) { svc.ink.setPageBackground(bg); open(Panel.BOARD) }
+            val p = Ui.pill(ctx, name) { svc.setBoard(bg); open(Panel.BOARD) }
             Ui.setPillActive(p, svc.ink.page.background == bg)
             r.addView(p)
         }
