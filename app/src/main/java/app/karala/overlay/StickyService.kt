@@ -142,7 +142,7 @@ class StickyService : Service() {
         if (notes.size >= MAX_NOTES) { toast("En fazla $MAX_NOTES not açık olabilir"); return }
         val d = resources.displayMetrics.density
         val (sw, sh) = WindowDragger.screenSize(wm)
-        val w = (260 * d).toInt().coerceAtMost(sw - (32 * d).toInt())
+        val w = (280 * d).toInt().coerceAtMost(sw - (32 * d).toInt())
         val h = (200 * d).toInt()
         val k = notes.size % 6
         val note = StickyNote(

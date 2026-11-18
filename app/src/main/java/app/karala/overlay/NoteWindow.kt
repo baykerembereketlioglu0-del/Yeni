@@ -11,7 +11,6 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.widget.FrameLayout
-import android.widget.HorizontalScrollView
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -77,9 +76,53 @@ internal class NoteWindow(private val svc: StickyService, val note: StickyNote) 
     }
 
     private val card = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL }
-    private val header = FrameLayout(ctx)
+    /**
+     * Başlık şeridi: her yerinden sürüklenir. Bir düğmenin üstünden başlayan hareket de eşiği aşınca
+     * düğmeden alınıp sürüklemeye dönüşür; dokunup bırakmak düğmeyi çalıştırır. Boş yere dokunmak
+     * notu açar/kapatır.
+     */
+    private val header = object : FrameLayout(ctx) {
+        private val slop = android.view.ViewConfiguration.get(ctx).scaledTouchSlop
+        private var downX = 0f; private var downY = 0f; private var startX = 0; private var startY = 0
+        private var dragging = false; private var childTook = false
+
+        override fun dispatchTouchEvent(e: MotionEvent): Boolean {
+            when (e.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    downX = e.rawX; downY = e.rawY; startX = params.x; startY = params.y; dragging = false
+                    handler.removeCallbacks(idle)
+                    childTook = super.dispatchTouchEvent(e)
+                    return true
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    val dx = e.rawX - downX; val dy = e.rawY - downY
+                    if (!dragging && (abs(dx) > slop || abs(dy) > slop)) {
+                        dragging = true
+                        // Düğmeye giden dokunuşu iptal et: sürükleme bir tıklamaya dönüşmesin.
+                        if (childTook) MotionEvent.obtain(e).also { it.action = MotionEvent.ACTION_CANCEL; super.dispatchTouchEvent(it); it.recycle() }
+                    }
+                    if (dragging) {
+                        params.x = startX + dx.toInt(); params.y = startY + dy.toInt()
+                        WindowDragger.clamp(wm, root, params)
+                        runCatching { wm.updateViewLayout(root, params) }
+                        return true
+                    }
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    if (dragging) { dragging = false; savePosition(); scheduleIdle(IDLE_AFTER_TOUCH); return true }
+                    if (!childTook && e.actionMasked == MotionEvent.ACTION_UP) { if (active) deactivate() else activate() }
+                }
+            }
+            return if (childTook) super.dispatchTouchEvent(e) else true
+        }
+    }
     private val tools = Ui.row(ctx)
-    private val toolScroll = HorizontalScrollView(ctx).apply { isHorizontalScrollBarEnabled = false; addView(tools) }
+    /** Her zaman görünen tutamaç: notu buradan sürükle (kalemle ya da parmakla). */
+    private val grip = ImageView(ctx).apply {
+        setImageDrawable(IconDrawable(Icon.GRIP, 0x99000000.toInt(), 3.2f))
+        val p = dp(7f); setPadding(p, p, p, p)
+        contentDescription = "Notu taşı"
+    }
     private val penBtn = btn(Icon.PEN, "Not kalemi") { eraser = false; applyTool(); refresh() }
     private val eraserBtn = btn(Icon.ERASER, "Not silgisi") { eraser = !eraser; applyTool(); refresh() }
     /** Tek düğme: dokundukça mürekkep rengi değişir (koyu → mavi → kırmızı). */
@@ -122,10 +165,13 @@ internal class NoteWindow(private val svc: StickyService, val note: StickyNote) 
         tools.addView(penBtn); tools.addView(inkBtn); tools.addView(eraserBtn)
         tools.addView(undoBtn); tools.addView(clearBtn); tools.addView(paperBtn)
         val headRow = Ui.row(ctx)
-        headRow.addView(toolScroll, LinearLayout.LayoutParams(0, -1, 1f))
+        headRow.addView(grip, LinearLayout.LayoutParams(dp(30f), dp(36f)))
+        // Araçlar düz bir satırdadır (kaydırma yok): boş kalan başlık alanı her hâlde sürüklemeye açık kalır.
+        tools.clipChildren = true
+        headRow.addView(tools, LinearLayout.LayoutParams(0, -1, 1f))
         headRow.addView(collapseBtn); headRow.addView(closeBtn)
         header.addView(headRow, FrameLayout.LayoutParams(-1, -1))
-        header.setOnTouchListener(WindowDragger(wm, root, params, onClick = { if (active) deactivate() else activate() }, onDropped = { savePosition() }))
+        // Sürükleme başlığın kendisinde (bkz. header); tutamaç yalnızca görsel ipucu.
         card.addView(header, LinearLayout.LayoutParams(-1, dp(36f)))
 
         // ---- Yazı alanı ----
@@ -217,8 +263,17 @@ internal class NoteWindow(private val svc: StickyService, val note: StickyNote) 
         inkBtn.background = GradientDrawable().apply {
             shape = GradientDrawable.OVAL; setColor(inkColor); setStroke(dp(2.5f), ColorUtils.setAlphaComponent(Color.WHITE, 220))
         }
+        fitTools()
         undoBtn.alpha = if (ink.editor.canUndo) 1f else 0.35f
         clearBtn.alpha = if (ink.page.isEmpty) 0.35f else 1f
+    }
+
+    /** Not genişliğine göre başlıkta gösterilecek araçlar: taşan düğme olmasın, tutamaç ve ✕ hep görünsün. */
+    private fun fitTools() {
+        val wDp = note.w / d
+        paperBtn.visibility = if (wDp >= 274) View.VISIBLE else View.GONE
+        clearBtn.visibility = if (wDp >= 244) View.VISIBLE else View.GONE
+        undoBtn.visibility = if (wDp >= 214) View.VISIBLE else View.GONE
     }
 
     private fun updateHint() { hint.visibility = if (ink.page.isEmpty && !active) View.VISIBLE else View.GONE }
@@ -245,7 +300,7 @@ internal class NoteWindow(private val svc: StickyService, val note: StickyNote) 
         active = true
         eraser = false
         applyTool()
-        toolScroll.visibility = View.VISIBLE
+        tools.visibility = View.VISIBLE
         paint(); refresh(); updateHint()
         if (fresh) scheduleIdle(IDLE_FRESH)
     }
@@ -253,7 +308,7 @@ internal class NoteWindow(private val svc: StickyService, val note: StickyNote) 
     fun deactivate() {
         handler.removeCallbacks(idle)
         active = false
-        toolScroll.visibility = View.INVISIBLE
+        tools.visibility = View.INVISIBLE
         paint(); updateHint()
     }
 
@@ -323,6 +378,7 @@ internal class NoteWindow(private val svc: StickyService, val note: StickyNote) 
                     val h = (sh + (e.rawY - sy)).toInt().coerceIn(dp(MIN_H), scrH - params.y - dp(36f))
                     if (abs(w - note.w) + abs(h - note.h) < 2) return true
                     note.w = w; note.h = h
+                    fitTools()
                     body.layoutParams = (body.layoutParams as LinearLayout.LayoutParams).apply { width = w; height = h }
                     runCatching { wm.updateViewLayout(root, params) }
                 }

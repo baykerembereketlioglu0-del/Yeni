@@ -230,6 +230,50 @@ class StickyTest {
         assertTrue(org.robolectric.Shadows.shadowOf(svc).isStoppedBySelf)
     }
 
+    private fun drag(root: View, tool: Int, fromX: Float, fromY: Float, dx: Float, dy: Float) {
+        val t = SystemClock.uptimeMillis()
+        fun ev(a: Int, x: Float, y: Float) = MotionEvent.obtain(t, t, a, 1, props(tool), coords(x, y), 0, 0, 1f, 1f, 0, 0, InputDevice.SOURCE_TOUCHSCREEN, 0)
+        root.dispatchTouchEvent(ev(MotionEvent.ACTION_DOWN, fromX, fromY))
+        for (i in 1..5) root.dispatchTouchEvent(ev(MotionEvent.ACTION_MOVE, fromX + dx * i / 5, fromY + dy * i / 5))
+        root.dispatchTouchEvent(ev(MotionEvent.ACTION_UP, fromX + dx, fromY + dy))
+        idle()
+    }
+
+    /** Kalem yaklaşınca not etkinleşir; etkinken de (kalemle) tutamaçtan ve başlığın boş yerinden taşınabilmeli. */
+    @Test fun dragWhileActiveWithPen() {
+        start(StickyService.ACTION_ADD)
+        val root = noteRoots()[0]; layout(root)
+        val params = root.layoutParams as WindowManager.LayoutParams
+        hover(root, MotionEvent.ACTION_HOVER_ENTER, 30f, 30f)
+        assertTrue(visible(root, "Not silgisi"))
+
+        // Tutamaçtan sürükle.
+        val gripView = find(root, "Notu taşı")
+        val x0 = params.x; val y0 = params.y
+        drag(root, MotionEvent.TOOL_TYPE_STYLUS, gripView.width / 2f, gripView.height / 2f, -120f, 90f)
+        assertEquals(x0 - 120, params.x); assertEquals(y0 + 90, params.y)
+
+        // Bir aracın (silgi) üstünden başlayan sürükleme de notu taşır ve silgiyi seçmez.
+        val er = find(root, "Not silgisi")
+        val loc = IntArray(2); er.getLocationInWindow(loc)
+        val x1 = params.x; val y1 = params.y
+        drag(root, MotionEvent.TOOL_TYPE_STYLUS, loc[0] + er.width / 2f, loc[1] + er.height / 2f, 80f, 60f)
+        assertEquals(x1 + 80, params.x); assertEquals(y1 + 60, params.y)
+        assertEquals(ToolType.PEN, root.findInk()!!.tool)
+        // Silgiye dokunup bırakmak ise silgiyi seçer.
+        val t = SystemClock.uptimeMillis()
+        fun ev(a: Int) = MotionEvent.obtain(t, t, a, 1, props(MotionEvent.TOOL_TYPE_STYLUS), coords(loc[0] + er.width / 2f, loc[1] + er.height / 2f), 0, 0, 1f, 1f, 0, 0, InputDevice.SOURCE_TOUCHSCREEN, 0)
+        root.dispatchTouchEvent(ev(MotionEvent.ACTION_DOWN)); root.dispatchTouchEvent(ev(MotionEvent.ACTION_UP)); idle()
+        assertEquals(ToolType.ERASER, root.findInk()!!.tool)
+        snap(root, "45-note-grip")
+
+        // Konum kaydedilir: servis yeniden açılınca not aynı yerde.
+        controller.destroy(); idle()
+        start(StickyService.ACTION_SHOW)
+        val again = noteRoots()[0].layoutParams as WindowManager.LayoutParams
+        assertEquals(params.x, again.x); assertEquals(params.y, again.y)
+    }
+
     @Test fun hideAndShowFromNotification() {
         start(StickyService.ACTION_ADD)
         val root = noteRoots()[0]

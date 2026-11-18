@@ -7,7 +7,7 @@ unutmadan önce sana yeniden sorulur.
 
 Reklam yok, hesap yok, abonelik yok. Her şey cihazda saklanır.
 
-**Kurulum:** [`dist/karala-1.2.0.apk`](dist/karala-1.2.0.apk) dosyasını tablete/telefona indirip aç (Android 8.0+).
+**Kurulum:** [`dist/karala-1.2.1.apk`](dist/karala-1.2.1.apk) dosyasını tablete/telefona indirip aç (Android 8.0+).
 İlk açılışta "diğer uygulamaların üzerinde göster" iznini ver.
 
 > **Anahtar gri ve "Kısıtlı ayar tarafından kontrol ediliyor" mu yazıyor?** Mağaza dışından kurulan uygulamalarda
@@ -42,7 +42,8 @@ geçsen, ekran kalemini kapatsan, tableti yeniden başlatsan bile geri gelir. Ek
 - **Kalem yaklaşınca kendiliğinden açılır:** kalem notun üstüne geldiğinde (dokunmadan, havada) not yazma hâline
   geçer ve kalem seçili gelir. Kalem uzaklaşınca birkaç saniyede sade hâline döner. Kalemsiz cihazda nota dokunmak yeter.
 - **Yaz ve sil:** kalem, silgi (parça silgi), kalemin silgi ucu/düğmesi, geri al, temizle; üç mürekkep rengi.
-- **Taşı, boyutlandır, küçült:** başlıktan sürükle, sağ alt köşeden büyüt/küçült (yazı yerinde kalır),
+- **Taşı, boyutlandır, küçült:** üst şeridin herhangi bir yerinden (soldaki ⠿ tutamaç, hatta düğmelerin üstü) kalemle
+  ya da parmakla sürükle; dokunup bırakmak düğmeyi çalıştırır, sağ alt köşeden büyüt/küçült (yazı yerinde kalır),
   küçültünce kâğıt renginde bir rozete dönüşür.
 - **Kâğıt rengi:** sarı, pembe, mavi, yeşil, mor, turuncu.
 - **Kaldırma:** ✕ önce sorar: "Deftere kaydet ve kaldır" ya da "Kaldır".
