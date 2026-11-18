@@ -56,6 +56,26 @@
         </service>
 
         <service
+            android:name=".overlay.StickyService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Kullanıcının ekrana iliştirdiği yapışkan notları, kaldırılana kadar diğer uygulamaların üzerinde gösterir." />
+        </service>
+
+        <service
+            android:name=".overlay.StickyTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_stat_note"
+            android:label="@string/tile_note_label"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <service
             android:name=".overlay.OverlayTileService"
             android:exported="true"
             android:icon="@drawable/ic_stat_pen"

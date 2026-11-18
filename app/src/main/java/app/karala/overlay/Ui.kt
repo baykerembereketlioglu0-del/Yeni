@@ -148,12 +148,15 @@ internal class WindowDragger(
 
     companion object {
         fun screenSize(wm: WindowManager): Pair<Int, Int> {
-            return if (android.os.Build.VERSION.SDK_INT >= 30) {
+            val (w, h) = if (android.os.Build.VERSION.SDK_INT >= 30) {
                 val b = wm.maximumWindowMetrics.bounds; b.width() to b.height()
             } else {
                 val p = android.graphics.Point()
                 @Suppress("DEPRECATION") wm.defaultDisplay.getRealSize(p); p.x to p.y
             }
+            // Bazı ortamlarda pencere ölçüsü eksik gelir; ekran ölçüsünden küçük olamaz.
+            val dm = android.content.res.Resources.getSystem().displayMetrics
+            return maxOf(w, dm.widthPixels) to maxOf(h, dm.heightPixels)
         }
 
         fun clamp(wm: WindowManager, window: View, params: WindowManager.LayoutParams) {

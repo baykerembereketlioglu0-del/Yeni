@@ -47,6 +47,12 @@ class PenLauncher(private val ctx: Context) {
         }
     }
 
+    /** Ekrana yeni bir yapışkan not ekler; izin yoksa izin rehberini açar. */
+    fun addNote() {
+        if (!Settings.canDrawOverlays(ctx)) permissionSheet = true
+        else app.karala.overlay.StickyService.add(ctx)
+    }
+
     /** Seçim penceresini her durumda açar (mod çipine dokunulduğunda). */
     fun pickMode() {
         stylus = prefs.stylusOnly

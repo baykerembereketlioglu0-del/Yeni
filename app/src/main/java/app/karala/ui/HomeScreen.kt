@@ -69,6 +69,7 @@ fun HomeScreen(nav: NavController, pen: PenLauncher = rememberPenLauncher()) {
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { now = System.currentTimeMillis(); canOverlay = Settings.canDrawOverlays(ctx); pen.stylus = prefs.stylusOnly }
 
     val running by OverlayService.running.collectAsStateWithLifecycle()
+    val stickyCount by app.karala.overlay.StickyService.count.collectAsStateWithLifecycle()
     val subjects by repo.dao.subjects().collectAsStateWithLifecycle(emptyList())
     val tasks by repo.dao.tasks().collectAsStateWithLifecycle(emptyList())
     val schedule by repo.dao.schedule().collectAsStateWithLifecycle(emptyList())
@@ -110,6 +111,8 @@ fun HomeScreen(nav: NavController, pen: PenLauncher = rememberPenLauncher()) {
 
         // ---- Ekran kalemi ----
         PenHero(canOverlay, running, pen.stylus, onStart = { if (running) OverlayService.stop(ctx) else pen.launch() }, onMode = { pen.pickMode() })
+        Spacer(Modifier.height(12.dp))
+        StickyCard(stickyCount) { pen.addNote() }
 
         // ---- Bugün ----
         SectionTitle("Bugün") { TextButton({ nav.navigate("stats") }) { Text("İstatistik") } }
@@ -277,6 +280,34 @@ private fun PenHero(canOverlay: Boolean, running: Boolean, stylus: Boolean, onSt
                     Text(if (stylus) "Kalem" else "El", style = MaterialTheme.typography.titleSmall, color = ink)
                     Icon(Icons.Rounded.ExpandMore, null, tint = ink.copy(alpha = 0.7f), modifier = Modifier.size(20.dp))
                 }
+            }
+        }
+    }
+}
+
+/** Ekran notu kartı: yapışkan not ekler, ekrandaki not sayısını gösterir. */
+@Composable
+private fun StickyCard(count: Int, onAdd: () -> Unit) {
+    val paper = Color(0xFFFFE97A)
+    KCard(Modifier.fillMaxWidth().clip(MaterialTheme.shapes.medium).clickable(onClick = onAdd)) {
+        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+            // Minik yapışkan not: kıvrık köşeli sarı kâğıt.
+            Box(Modifier.size(46.dp).clip(RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp, bottomStart = 10.dp, bottomEnd = 18.dp)).background(paper),
+                contentAlignment = Alignment.Center) {
+                KIcon(KI.NOTE, Color(0xFF1B1E26), 24.dp)
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text("Ekran notu", style = MaterialTheme.typography.titleSmall)
+                Text(if (count > 0) "Ekranda $count not · kalemi üstüne getir, yaz" else "Sen kaldırana kadar her uygulamanın üstünde durur",
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            }
+            Spacer(Modifier.width(8.dp))
+            Row(Modifier.height(40.dp).clip(RoundedCornerShape(14.dp)).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.16f))
+                .clickable(role = Role.Button, onClick = onAdd).padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Rounded.Add, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(4.dp))
+                Text("Ekle", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
             }
         }
     }

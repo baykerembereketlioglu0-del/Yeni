@@ -323,6 +323,7 @@ internal class Toolbar(private val svc: OverlayService) {
         r.addView(Ui.pill(ctx, "🍅 Pomodoro") { svc.toggleWidget(OverlayService.W_POMODORO) })
         r.addView(Ui.pill(ctx, "🧮 Hesap makinesi") { svc.toggleWidget(OverlayService.W_CALC) })
         r.addView(Ui.pill(ctx, "✔ Soru sayacı") { svc.toggleWidget(OverlayService.W_COUNTER) })
+        r.addView(Ui.pill(ctx, "📝 Ekran notu") { StickyService.add(ctx); closePanel() })
         col.addView(hscroll(r))
         val r2 = Ui.row(ctx)
         val stylus = Ui.pill(ctx, if (svc.prefs.stylusOnly) "Giriş: Kalem" else "Giriş: El") { svc.showModeChooser() }

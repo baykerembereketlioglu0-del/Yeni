@@ -53,11 +53,12 @@ import kotlinx.coroutines.launch
 import java.util.Calendar
 
 @Composable
-fun ToolsScreen(nav: NavController) {
+fun ToolsScreen(nav: NavController, pen: PenLauncher = rememberPenLauncher()) {
     data class Tool(val route: String, val title: String, val hint: String, val icon: ImageVector, val tint: Color)
     val k = K
     val tools = listOf(
-        Tool("focus", "Odak", "Pomodoro: 25 dk çalış, 5 dk dinlen", Icons.Rounded.Timer, k.sun),
+        Tool("sticky", "Ekran notu", "Her uygulamanın üstünde duran yapışkan not", Icons.Rounded.StickyNote2, k.sun),
+        Tool("focus", "Odak", "Pomodoro: 25 dk çalış, 5 dk dinlen", Icons.Rounded.Timer, k.coral),
         Tool("stats", "İstatistik", "Çalışma süren ve soru sayıların", Icons.Rounded.BarChart, k.mint),
         Tool("exams", "Deneme takibi", "Netlerini kaydet, gelişimini gör", Icons.Rounded.Leaderboard, k.violet),
         Tool("calc", "Hesap makinesi", "Bilimsel, trigonometri dahil", Icons.Rounded.Calculate, k.sky),
@@ -70,7 +71,7 @@ fun ToolsScreen(nav: NavController) {
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             items(tools) { t ->
-                KCard(Modifier.clip(MaterialTheme.shapes.medium).clickable { nav.navigate(t.route) }) {
+                KCard(Modifier.clip(MaterialTheme.shapes.medium).clickable { if (t.route == "sticky") pen.addNote() else nav.navigate(t.route) }) {
                     Column(Modifier.padding(16.dp).fillMaxWidth().heightIn(min = 118.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             IconBubble(t.icon, t.tint, 46)

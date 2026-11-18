@@ -195,6 +195,8 @@ class OverlayService : Service() {
         applyTool(); applyBoardOpacity()
         toolbar.refresh()
         ink.onRejectedTouch = { hintStylusMode() }
+        // Ekran notları açıksa, yeni eklenen tam ekran katmanın altında kalmasınlar.
+        StickyService.instance?.raise()
         running.value = true
         refreshSubjects {}
         return true

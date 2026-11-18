@@ -48,6 +48,11 @@ class InkView(context: Context, private val editorMode: Boolean) : View(context)
     var backgroundBitmap: Bitmap? = null
         set(v) { field = v; invalidate() }
 
+    /**
+     * true: sayfa her zaman görünümün boyutunu alır (ölçekleme yok). Yeniden boyutlanan yapışkan notlar için:
+     * kâğıt büyür/küçülür, yazı yerinde kalır.
+     */
+    var followViewSize = false
     /** Bu yüzeye en az bir kez gerçek bir kalem ucu dokundu mu? (Cihazın kalemi tanıdığının kanıtı.) */
     var stylusEverSeen = false; private set
     /** Kalem modunda parmak dokunuşu yok sayıldığında (kullanıcıya ipucu göstermek için). */
@@ -108,6 +113,7 @@ class InkView(context: Context, private val editorMode: Boolean) : View(context)
 
     private fun adoptViewSizeIfNeeded() {
         val p = editor.page
+        if (followViewSize) { if (width > 0 && height > 0) { p.width = width; p.height = height }; return }
         if (width > 0 && height > 0 && (p.width <= 0 || p.height <= 0 || (!editorMode && p.isEmpty))) {
             p.width = width; p.height = height
         }

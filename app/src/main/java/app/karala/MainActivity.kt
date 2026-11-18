@@ -100,12 +100,15 @@ private fun KaralaApp(pendingRoute: String?, consumeRoute: () -> Unit, onTheme: 
             notifPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
         App.instance.prefs.onboarded = true
+        // Kaldırılmamış ekran notları varsa (ör. sistem servisi kapattıysa) geri getir.
+        app.karala.overlay.StickyService.restoreIfNeeded(ctx)
     }
 
     LaunchedEffect(pendingRoute) {
         when (pendingRoute) {
             null -> return@LaunchedEffect
             "pen" -> pen.launch()
+            "note" -> pen.addNote()
             "focus" -> nav.navigate("focus") { launchSingleTop = true }
             "plan" -> nav.tab("plan")
         }
@@ -122,7 +125,7 @@ private fun KaralaApp(pendingRoute: String?, consumeRoute: () -> Unit, onTheme: 
             composable("notes") { NotesScreen(nav) }
             composable("review") { ReviewScreen(nav) }
             composable("plan") { PlanScreen() }
-            composable("tools") { ToolsScreen(nav) }
+            composable("tools") { ToolsScreen(nav, pen) }
             composable("settings") { SettingsScreen({ nav.popBackStack() }, onTheme, pen) }
             composable("note/{id}", listOf(navArgument("id") { type = NavType.LongType })) {
                 NoteEditorScreen(it.arguments!!.getLong("id")) { nav.popBackStack() }

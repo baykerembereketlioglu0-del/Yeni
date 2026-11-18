@@ -4,6 +4,9 @@
     <string name="tile_label">Ekran kalemi</string>
     <string name="shortcut_pen_short">Ekran kalemi</string>
     <string name="shortcut_pen_long">Ekran kalemini başlat</string>
+    <string name="tile_note_label">Ekran notu</string>
+    <string name="shortcut_note_short">Ekran notu</string>
+    <string name="shortcut_note_long">Ekrana yapışkan not ekle</string>
     <string name="shortcut_focus_short">Odaklan</string>
     <string name="shortcut_focus_long">Pomodoro başlat</string>
 </resources>

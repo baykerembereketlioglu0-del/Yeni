@@ -7,7 +7,7 @@ unutmadan önce sana yeniden sorulur.
 
 Reklam yok, hesap yok, abonelik yok. Her şey cihazda saklanır.
 
-**Kurulum:** [`dist/karala-1.1.1.apk`](dist/karala-1.1.1.apk) dosyasını tablete/telefona indirip aç (Android 8.0+).
+**Kurulum:** [`dist/karala-1.2.0.apk`](dist/karala-1.2.0.apk) dosyasını tablete/telefona indirip aç (Android 8.0+).
 İlk açılışta "diğer uygulamaların üzerinde göster" iznini ver.
 
 > **Anahtar gri ve "Kısıtlı ayar tarafından kontrol ediliyor" mu yazıyor?** Mağaza dışından kurulan uygulamalarda
@@ -33,6 +33,24 @@ cihaz ya da parmak gibi algılanan pasif kalem) ikinci dokunuşta "El moduna ge�
 
 ![Uygulama](docs/ekranlar/uygulama-1.png)
 ![Uygulama](docs/ekranlar/uygulama-2.png)
+
+## Ekran notu (yapışkan not)
+
+Her uygulamanın üstünde duran küçük yapışkan kâğıtlar. **Sen kaldırana kadar ekranda kalır**: başka uygulamaya
+geçsen, ekran kalemini kapatsan, tableti yeniden başlatsan bile geri gelir. Ekranın geri kalanı normal kullanılır.
+
+- **Kalem yaklaşınca kendiliğinden açılır:** kalem notun üstüne geldiğinde (dokunmadan, havada) not yazma hâline
+  geçer ve kalem seçili gelir. Kalem uzaklaşınca birkaç saniyede sade hâline döner. Kalemsiz cihazda nota dokunmak yeter.
+- **Yaz ve sil:** kalem, silgi (parça silgi), kalemin silgi ucu/düğmesi, geri al, temizle; üç mürekkep rengi.
+- **Taşı, boyutlandır, küçült:** başlıktan sürükle, sağ alt köşeden büyüt/küçült (yazı yerinde kalır),
+  küçültünce kâğıt renginde bir rozete dönüşür.
+- **Kâğıt rengi:** sarı, pembe, mavi, yeşil, mor, turuncu.
+- **Kaldırma:** ✕ önce sorar: "Deftere kaydet ve kaldır" ya da "Kaldır".
+- **Ekleme:** ana sayfadaki "Ekran notu" kartı, Araçlar, ekran kalemi menüsü, hızlı ayarlar kutucuğu, uygulama
+  kısayolu ya da bildirimdeki "Yeni not". Bildirimden tüm notlar gizlenip gösterilebilir. En fazla 12 not.
+- Kalem modundayken, kalem ucu bir kez algılandıktan sonra notta da yalnızca kalem yazar (avuç içi yazmaz).
+
+![Ekran notu](docs/ekranlar/ekran-notu.png)
 
 ## Ekran kalemi (katman)
 
@@ -93,7 +111,7 @@ cihaz ya da parmak gibi algılanan pasif kalem) ikinci dokunuşta "El moduna ge�
 ## Geliştirme
 
 ```bash
-./gradlew :app:testDebugUnitTest   # 40 test; ekran görüntüleri app/build/shots altına yazılır
+./gradlew :app:testDebugUnitTest   # 44 test; ekran görüntüleri app/build/shots altına yazılır
 ./gradlew :app:assembleRelease     # app/build/outputs/apk/release/app-release.apk
 ```
 
@@ -102,7 +120,7 @@ Kotlin, Jetpack Compose (uygulama), klasik View (katman), Room. Paketler:
 | Paket | İçerik |
 |---|---|
 | `ink` | Çizim modeli, geri al/yinele, silgi geometrisi, şekil tanıma, JSON biçimi, çizici, `InkView` |
-| `overlay` | `OverlayService`, araç çubuğu, yüzen araçlar, ekran görüntüsü (`MediaProjection`) |
+| `overlay` | `OverlayService`, araç çubuğu, yüzen araçlar, ekran görüntüsü (`MediaProjection`), ekran notları (`StickyService`, `NoteWindow`) |
 | `study` | Aralıklı tekrar (SM-2), ifade çözümleyici, Pomodoro, hatırlatmalar, birimler, formül/element verisi |
 | `data` | Room varlıkları ve sorgular, sayfa dosyaları, dışa aktarma, ayarlar |
 | `ui` | Compose ekranları |

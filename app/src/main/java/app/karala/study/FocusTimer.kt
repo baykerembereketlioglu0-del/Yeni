@@ -228,6 +228,8 @@ class BootReceiver : BroadcastReceiver() {
         App.instance.scope.launch {
             try {
                 Reminders.rescheduleAll(context)
+                // Ekran notları kaldırılana kadar kalır: yeniden başlatmadan sonra ekrana geri getir.
+                app.karala.overlay.StickyService.restoreIfNeeded(context)
                 val s = FocusTimer.state.value
                 if (s.running) { FocusTimer.pause(); FocusTimer.resume() }
             } finally { pending.finish() }

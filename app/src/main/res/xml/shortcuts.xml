@@ -6,6 +6,12 @@
             <extra android:name="route" android:value="pen" />
         </intent>
     </shortcut>
+    <shortcut android:shortcutId="note" android:enabled="true" android:icon="@drawable/ic_stat_note"
+        android:shortcutShortLabel="@string/shortcut_note_short" android:shortcutLongLabel="@string/shortcut_note_long">
+        <intent android:action="android.intent.action.VIEW" android:targetPackage="app.karala" android:targetClass="app.karala.MainActivity">
+            <extra android:name="route" android:value="note" />
+        </intent>
+    </shortcut>
     <shortcut android:shortcutId="focus" android:enabled="true" android:icon="@drawable/ic_stat_pen"
         android:shortcutShortLabel="@string/shortcut_focus_short" android:shortcutLongLabel="@string/shortcut_focus_long">
         <intent android:action="android.intent.action.VIEW" android:targetPackage="app.karala" android:targetClass="app.karala.MainActivity">

@@ -61,3 +61,22 @@ class OverlayTileService : TileService() {
         } else @Suppress("DEPRECATION") startActivityAndCollapse(i)
     }
 }
+
+/** Hızlı ayarlar kutucuğu: bildirim panelinden tek dokunuşla ekrana yeni bir yapışkan not ekler. */
+class StickyTileService : TileService() {
+    override fun onStartListening() {
+        qsTile?.apply { state = if (StickyService.running.value) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE; updateTile() }
+    }
+
+    @android.annotation.SuppressLint("StartActivityAndCollapseDeprecated")
+    override fun onClick() {
+        if (Settings.canDrawOverlays(this)) {
+            StickyService.add(this)
+            qsTile?.apply { state = Tile.STATE_ACTIVE; updateTile() }
+            return
+        }
+        val i = Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK).putExtra(MainActivity.EXTRA_ROUTE, "note")
+        if (Build.VERSION.SDK_INT >= 34) startActivityAndCollapse(PendingIntent.getActivity(this, 1, i, PendingIntent.FLAG_IMMUTABLE))
+        else @Suppress("DEPRECATION") startActivityAndCollapse(i)
+    }
+}
