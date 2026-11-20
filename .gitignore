@@ -5,3 +5,6 @@ local.properties
 .idea/
 .kotlin/
 captures/
+
+# Kaynak kod arşivleri deponun kopyasıdır; depoya eklenmez
+dist/*.zip
